@@ -29,7 +29,7 @@
     "@tailwindcss/vite": "^4.2.4",
     "@types/node": "^22.10.0",
     "@typescript-eslint/parser": "^8.59.0",
-    "@vitejs/plugin-vue": "^5.2.4",
+    "@vitejs/plugin-vue": "^6.0.6",
     "eslint": "^9.39.4",
     "eslint-plugin-vue": "^10.9.0",
     "jsdom": "^29.0.2",
