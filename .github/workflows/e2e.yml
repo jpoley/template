@@ -1,0 +1,51 @@
+name: e2e
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "admin/**"
+      - "backend/**"
+      - "e2e/**"
+      - ".github/workflows/e2e.yml"
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install deps
+        run: |
+          ( cd backend && dotnet restore Backend.sln )
+          ( cd frontend && bun install )
+          ( cd admin && bun install )
+          ( cd e2e && npm ci || npm install )
+
+      - name: Build backend
+        run: dotnet build backend/Backend.sln -c Release
+
+      - name: Install Playwright (with deps)
+        run: ( cd e2e && npx playwright install --with-deps chromium )
+
+      - name: Run Playwright
+        run: ( cd e2e && npx playwright test )
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 14

@@ -1,0 +1,40 @@
+name: build-images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: ${{ vars.ACR_LOGIN_SERVER }}
+
+jobs:
+  build:
+    if: ${{ vars.ACR_LOGIN_SERVER != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [frontend, admin, backend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: ACR login
+        run: az acr login --name "${{ vars.ACR_NAME }}"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/projecttemplate/${{ matrix.service }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/projecttemplate/${{ matrix.service }}:latest
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}

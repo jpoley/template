@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>ProjectTemplate.Api</RootNamespace>
+    <UserSecretsId>projecttemplate-api</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Scalar.AspNetCore" Version="2.14.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ProjectTemplate.Domain\ProjectTemplate.Domain.csproj" />
+    <ProjectReference Include="..\ProjectTemplate.Infrastructure\ProjectTemplate.Infrastructure.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,91 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+*.swo
+
+# Claude Code per-user settings
+.claude/settings.local.json
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.pfx
+
+# Logs (except the .logs directory format README)
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun-debug.log*
+
+# Node / Bun
+node_modules/
+bun.lockb
+dist/
+dist-ssr/
+coverage/
+.nuxt/
+.output/
+.vite/
+*.tsbuildinfo
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+TestResults/
+.vs/
+*.nupkg
+msbuild.binlog
+artifacts/
+
+# Python (sometimes used in infra tooling)
+__pycache__/
+*.pyc
+.venv/
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Docker
+.docker/
+
+# Agent working dirs — keep structure, ignore run output
+.logs/*.jsonl
+!.logs/.gitkeep
+!.logs/README.md
+!.logs/new-session.sh
+
+# Build output
+build/
+out/
+*.tgz
+
+# Playwright
+e2e/test-results/
+e2e/playwright-report/
+e2e/screenshots/
+e2e/run-playwright.sh

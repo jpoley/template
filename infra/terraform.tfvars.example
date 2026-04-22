@@ -1,0 +1,32 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+project_name = "projecttemplate"
+environment  = "dev"
+location     = "eastus2"
+
+# Container images. CI pushes these before `terraform apply`.
+backend_image  = "<acr-name>.azurecr.io/projecttemplate/backend:latest"
+frontend_image = "<acr-name>.azurecr.io/projecttemplate/frontend:latest"
+admin_image    = "<acr-name>.azurecr.io/projecttemplate/admin:latest"
+
+# Cosmos
+cosmos_consistency_level = "Session"
+cosmos_throughput_mode   = "serverless"
+
+# Backend scale
+backend_min_replicas = 1
+backend_max_replicas = 5
+
+# Log retention (days)
+log_analytics_retention_days = 30
+
+# Front Door
+frontdoor_sku = "Standard_AzureFrontDoor"
+custom_domain = ""
+
+# Lock down admin UI to your office IPs
+admin_allowed_ips = []
+
+tags = {
+  owner = "platform-team"
+}
