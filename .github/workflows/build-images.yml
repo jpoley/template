@@ -20,7 +20,7 @@ jobs:
       matrix:
         service: [frontend, admin, backend]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
