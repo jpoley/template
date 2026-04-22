@@ -30,6 +30,9 @@ bash "$SCRIPT_DIR/install-dotnet.sh"
 bash "$SCRIPT_DIR/install-terraform.sh"
 bash "$SCRIPT_DIR/install-cli-tools.sh"
 
+# Host-only: the devcontainer CLI. No-op inside a container.
+bash "$SCRIPT_DIR/install-devcontainer-cli.sh"
+
 # Docker is non-fatal: we need it at `docker compose up` time but not to build.
 bash "$SCRIPT_DIR/install-docker.sh" || log "docker not available — skipping (compose will fail until fixed)"
 

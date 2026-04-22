@@ -21,7 +21,17 @@ A GitHub template for starting full-stack projects with:
 ./install/bootstrap.sh
 ```
 
-That installs (userspace, no sudo): Bun, .NET 10 SDK, Terraform, backlog.md CLI, Claude Code CLI, Playwright + Chromium + runtime `.so` files, then runs `bun install` / `dotnet restore` / `terraform init -backend=false` / `npm install` for every subproject.
+That installs (userspace, no sudo): Bun, .NET 10 SDK, Terraform, backlog.md CLI, Claude Code CLI, GitHub Copilot CLI, the `devcontainer` CLI (host only), Playwright + Chromium + runtime `.so` files, then runs `bun install` / `dotnet restore` / `terraform init -backend=false` / `npm install` for every subproject.
+
+To upgrade installed CLIs to latest:
+
+```bash
+./install/upgrade.sh                  # upgrade all present tools
+./install/upgrade.sh claude           # just claude
+./install/upgrade.sh claude copilot   # named subset
+```
+
+Targets: `claude`, `copilot`, `backlog`, `devcontainer` (host only).
 
 Then verify:
 

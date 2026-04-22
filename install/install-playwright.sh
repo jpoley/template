@@ -22,7 +22,13 @@ fi
 
 if sudo -n true 2>/dev/null; then
   log "sudo available — using playwright's --with-deps installer"
-  sudo npx playwright install --with-deps chromium
+  # sudo strips PATH; resolve npx explicitly so node installs (nvm, feature, etc.) are reachable.
+  npx_bin="$(command -v npx)"
+  if [ -z "$npx_bin" ]; then
+    log "npx not on PATH — skipping playwright"
+    exit 0
+  fi
+  sudo env "PATH=$PATH" "$npx_bin" playwright install --with-deps chromium
   cat >"$ROOT/e2e/run-playwright.sh" <<'EOF'
 #!/usr/bin/env bash
 cd "$(dirname "$0")"

@@ -11,3 +11,8 @@ ensure_local_bin_on_path() {
     *) export PATH="$HOME/.local/bin:$PATH" ;;
   esac
 }
+
+# Returns 0 if we're running inside a container (docker / devcontainer / codespace).
+in_container() {
+  [ -f /.dockerenv ] || [ "${DEVCONTAINER:-}" = "true" ] || [ -n "${REMOTE_CONTAINERS:-}" ] || [ -n "${CODESPACES:-}" ]
+}

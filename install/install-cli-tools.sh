@@ -20,12 +20,21 @@ else
   log "claude already present"
 fi
 
-# GitHub Copilot CLI as a gh extension. Requires gh authenticated; skip silently otherwise.
-if have gh; then
-  if ! gh extension list 2>/dev/null | grep -q 'github/gh-copilot'; then
-    log "installing gh copilot extension"
-    gh extension install github/gh-copilot || log "gh copilot install failed (need gh auth login first)"
+# GitHub Copilot CLI (standalone agentic CLI, npm package @github/copilot).
+# Provides the `copilot` command. Auth happens on first run via `/login`.
+if ! have copilot; then
+  if have npm; then
+    log "installing GitHub Copilot CLI (@github/copilot)"
+    npm install -g @github/copilot || log "@github/copilot install failed (non-fatal)"
+  else
+    log "npm not available — skipping GitHub Copilot CLI"
   fi
 else
+  log "copilot already present: $(copilot --version 2>/dev/null | head -1)"
+fi
+
+# gh CLI presence check. gh itself is provided by the devcontainer feature
+# or the host package manager.
+if ! have gh; then
   log "gh CLI not installed — install via 'sudo apt install gh' or your package manager"
 fi
