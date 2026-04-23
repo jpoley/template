@@ -66,6 +66,8 @@
   "remoteUser": "vscode",
   "containerEnv": {
     "DOTNET_CLI_TELEMETRY_OPTOUT": "1",
-    "DOTNET_NOLOGO": "1"
+    "DOTNET_NOLOGO": "1",
+    "DOTNET_ROOT": "/home/vscode/.dotnet",
+    "PATH": "/home/vscode/.dotnet:/home/vscode/.local/bin:/home/vscode/.bun/bin:${containerEnv:PATH}"
   }
 }
