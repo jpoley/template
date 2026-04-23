@@ -17,10 +17,10 @@
     "@vueuse/core": "^14.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-vue-next": "^0.469.0",
+    "lucide-vue-next": "^1.0.0",
     "pinia": "^2.3.1",
     "radix-vue": "^1.9.17",
-    "tailwind-merge": "^2.6.1",
+    "tailwind-merge": "^3.5.0",
     "vue": "^3.5.33",
     "vue-router": "^5.0.6"
   },
