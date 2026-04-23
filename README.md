@@ -3,14 +3,14 @@
 A GitHub template for starting full-stack projects with:
 
 - **frontend/** — Vue 3 + TypeScript + Bun, shadcn-vue, service worker / PWA, containerized.
-- **backend/** — C# .NET 10 Web API backed by Cosmos DB, containerized.
+- **backend/** — C# .NET 10 Web API backed by PostgreSQL (EF Core + Npgsql), containerized.
 - **admin/** — Vue 3 + TypeScript admin UI for viewing and editing DB records.
 - **docs/** — Requirements and design documents.
-- **infra/** — Terraform for Azure (Container Apps, Cosmos DB, Front Door). All environment values are TF variables.
+- **infra/** — Terraform for Azure (Container Apps, Azure Database for PostgreSQL, Front Door). All environment values are TF variables.
 - **e2e/** — Playwright end-to-end browser tests that boot the full stack.
 - **install/** — Reproducible bootstrap scripts (Bun, .NET 10, Terraform, backlog.md, Playwright, deps).
 - **backlog/** — Real [backlog.md](https://github.com/MrLesk/Backlog.md) project for tasks, decisions, docs.
-- **docker-compose.yml** — Local dev stack (frontend + backend + admin + Cosmos emulator).
+- **docker-compose.yml** — Local dev stack (frontend + backend + admin + PostgreSQL).
 - **.devcontainer/** — Ready-to-use devcontainer with Claude Code, GitHub Copilot CLI, and `gh`.
 - **.claude/**, **.github/** — Agent configuration, CI, issue and PR templates.
 - **.logs/** — Append-only JSONL per session of agent decisions and references.
@@ -71,7 +71,7 @@ Two options.
 **Native** (fastest inner loop, no Docker):
 
 ```bash
-# Backend with in-memory store (Cosmos:Endpoint="" in appsettings.Development.json)
+# Backend with in-memory store (empty ConnectionStrings:Postgres in appsettings.Development.json)
 ( cd backend && ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/ProjectTemplate.Api )
 
 # In separate shells:
@@ -84,21 +84,22 @@ Two options.
 **Docker** (closer to prod, pick one database):
 
 ```bash
-./rebuild.sh               # default: cosmos (GA Linux emulator)
+./rebuild.sh               # default: postgres (PostgreSQL 16)
 ./rebuild.sh postgres      # PostgreSQL 16
-./rebuild.sh sqlserver     # SQL Server 2022
+./rebuild.sh sqlserver     # SQL Server 2022 (alternative)
 ```
 
-All three provider implementations are built and ready; only the chosen DB container starts (via compose profiles). The backend reads `Database:Provider` from config and wires up the matching repository. Switching providers wipes the previous DB container — data does not migrate between backends.
+On first run, `./rebuild.sh` auto-generates a `POSTGRES_PASSWORD` and writes it to `.env` (gitignored, `chmod 600`). docker-compose reads `.env` automatically. See `.env.example` for the schema. To rotate, delete the line and re-run `./rebuild.sh --fresh`.
+
+Both provider implementations are built and ready; only the chosen DB container starts (via compose profiles). The backend reads `Database:Provider` from config and wires up the matching repository. Switching providers wipes the previous DB container — data does not migrate between backends.
 
 | Service    | URL                         |
 | ---------- | --------------------------- |
 | Frontend   | http://localhost:6173       |
 | Admin      | http://localhost:6174       |
 | Backend    | http://localhost:6180       |
-| Cosmos     | https://localhost:6081      |
-| SQL Server | `sqlcmd -S localhost,6433 -U sa -P 'LocalDev!1234'` |
-| Postgres   | `psql -h localhost -p 6432 -U postgres` (password `LocalDev!1234`) |
+| Postgres   | `psql -h localhost -p 6432 -U postgres` (password from `.env` → `$POSTGRES_PASSWORD`) |
+| SQL Server | `sqlcmd -S localhost,6433 -U sa -P 'LocalDev!1234'` (optional) |
 
 See [`docs/troubleshooting/port-conflicts.md`](docs/troubleshooting/port-conflicts.md) if any port is already in use, [`docs/database-providers.md`](docs/database-providers.md) for how provider selection works, or [`docs/debugging-in-container.md`](docs/debugging-in-container.md) to step through backend code in VS Code while it runs inside the container.
 
@@ -135,7 +136,7 @@ These are pre-seeded as tasks — run `backlog task list`.
 ├── .github/            # Actions, issue/PR templates, copilot-instructions.md
 ├── .logs/              # JSONL per-session agent decision/reference logs
 ├── admin/              # Admin UI (Vue + TS + Bun + shadcn-vue)
-├── backend/            # .NET 10 API + Cosmos DB
+├── backend/            # .NET 10 API + PostgreSQL (EF Core + Npgsql)
 ├── backlog/            # backlog.md project (tasks, decisions, docs)
 ├── docs/               # Narrative docs (requirements, design, architecture)
 ├── e2e/                # Playwright browser tests (boots full stack)

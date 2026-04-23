@@ -1,6 +1,6 @@
 # Infrastructure (Terraform)
 
-Azure deployment: Container Apps + Cosmos DB + Container Registry + Front Door + Log Analytics + App Insights.
+Azure deployment: Container Apps + Azure Database for PostgreSQL (Flexible Server) + Container Registry + Front Door + Log Analytics + App Insights.
 
 All environment-specific inputs are Terraform variables (see `variables.tf`). Non-secret examples go in `terraform.tfvars.example`; copy to `terraform.tfvars` and fill in.
 
@@ -32,7 +32,7 @@ infra/
 └── modules/
     ├── observability/        # Log Analytics + App Insights
     ├── registry/             # Azure Container Registry
-    ├── cosmos/               # Cosmos DB account + database + container
+    ├── postgres/             # PostgreSQL Flexible Server + database + firewall rule
     ├── container_apps/       # Container Apps env + 3 apps + managed identity
     └── frontdoor/            # Front Door profile + routes + optional admin WAF
 ```
@@ -48,5 +48,7 @@ Terraform references image tags as variables (`backend_image`, etc.). CI pushes 
 
 ## Notes
 
-- Role assignment to the user-assigned identity requires the caller to have `User Access Administrator` (or `Owner`). If your CI principal is just `Contributor`, do the Cosmos RBAC assignment once manually and remove `azurerm_cosmosdb_sql_role_assignment` from state.
-- The Cosmos emulator for local dev lives in `docker-compose.yml` in the repo root — it does not run in Azure.
+- Role assignment to the user-assigned identity requires the caller to have `User Access Administrator` (or `Owner`) for the `AcrPull` binding. A `Contributor` CI principal can skip that single role assignment and grant it manually once.
+- The PostgreSQL admin password is a sensitive Terraform variable (`postgres_administrator_password`). Supply it via `TF_VAR_postgres_administrator_password` or a gitignored `*.auto.tfvars` file — never commit the value.
+- The backend receives the Postgres connection string as a Container App secret (`ConnectionStrings__Postgres`), injected from the module output. To move to AAD-token auth later, add `active_directory_auth_enabled = true` on the server and swap the env wiring for a managed-identity token provider.
+- Local dev Postgres lives in `docker-compose.yml` in the repo root — it does not run in Azure.

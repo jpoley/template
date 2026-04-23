@@ -5,7 +5,7 @@ using ProjectTemplate.Domain.Repositories;
 namespace ProjectTemplate.Infrastructure.InMemory;
 
 /// <summary>
-/// Thread-safe in-memory store. Used when no Cosmos endpoint is configured
+/// Thread-safe in-memory store. Used when no connection string is configured
 /// (e.g. "bun run dev" against "dotnet run" with no backing database).
 /// Not suitable for production — data vanishes on restart.
 /// </summary>

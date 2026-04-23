@@ -21,12 +21,12 @@
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
   ],
-  "forwardPorts": [6173, 6174, 6180, 6081],
+  "forwardPorts": [6173, 6174, 6180, 6432],
   "portsAttributes": {
     "6173": { "label": "Frontend" },
     "6174": { "label": "Admin" },
     "6180": { "label": "Backend API" },
-    "6081": { "label": "Cosmos Emulator" }
+    "6432": { "label": "PostgreSQL" }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
   "customizations": {
@@ -46,7 +46,7 @@
         "dbaeumer.vscode-eslint",
         "esbenp.prettier-vscode",
         "oven.bun-vscode",
-        "ms-azuretools.vscode-cosmosdb"
+        "ms-ossdata.vscode-postgresql"
       ],
       "settings": {
         "editor.formatOnSave": true,

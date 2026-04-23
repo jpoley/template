@@ -8,13 +8,13 @@ flowchart LR
   Admin([Admin]) --> AdminUI[Admin UI<br/>Vue]
   FE -->|/api| API[Backend API<br/>.NET 10]
   AdminUI -->|/api| API
-  API --> Cosmos[(Cosmos DB<br/>items container)]
+  API --> PG[(PostgreSQL<br/>items table)]
   API --> Logs[(App Insights)]
 ```
 
 ## Data model
 
-Single `items` container, partitioned by `/partitionKey`. Documents:
+Single `items` table managed by EF Core. Rows:
 
 ```json
 {
@@ -27,14 +27,14 @@ Single `items` container, partitioned by `/partitionKey`. Documents:
 }
 ```
 
-Partition strategy: choose a partition key that (a) scales horizontally (high cardinality) and (b) matches the query shape — most reads should be within a single partition.
+`partitionKey` is retained as a tenant/user discriminator column — index it for the common query shape (all items for a given tenant).
 
 ## API surface
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/api/health` | Liveness |
-| GET | `/api/items/{pk}` | List items in partition |
+| GET | `/api/items/{pk}` | List items for a partition key |
 | GET | `/api/items/{pk}/{id}` | Read one item |
 | POST | `/api/items` | Create item |
 | PUT | `/api/items/{pk}/{id}` | Update item |

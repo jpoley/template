@@ -19,12 +19,10 @@ Every service has **two ports**: one inside its container (fixed, internal) and 
 | Frontend | `6173` | `80` | The public website (nginx) |
 | Admin | `6174` | `80` | The internal admin UI (nginx) |
 | Backend API | `6180` | `8080` | The .NET API |
-| Cosmos (data) | `6081` | `8081` | Local Cosmos DB emulator (only when `cosmos` profile active) |
-| Cosmos (mgmt) | `6234` | `10251` | Cosmos emulator's direct/management channel |
+| PostgreSQL | `6432` | `5432` | PostgreSQL 16 (only when `postgres` profile active — default) |
 | SQL Server | `6433` | `1433` | SQL Server 2022 (only when `sqlserver` profile active) |
-| PostgreSQL | `6432` | `5432` | PostgreSQL 16 (only when `postgres` profile active) |
 
-Only one of `cosmos`/`sqlserver`/`postgres` is active at a time — they're mutually exclusive compose profiles. See [`database-providers.md`](../database-providers.md).
+Only one of `postgres`/`sqlserver` is active at a time — they're mutually exclusive compose profiles. See [`database-providers.md`](../database-providers.md).
 
 **Rule of thumb:** if an error message says "already in use", it's the host port (the left-hand number) that's the problem. Container ports are private to Docker and can't conflict with anything on your laptop.
 
@@ -130,26 +128,12 @@ docker compose down --remove-orphans
 
 ---
 
-## 5. Cosmos emulator specifically
-
-The Cosmos DB emulator (port `6081`) can take **1–3 minutes** to start the first time. `docker compose ps` will show it as `starting` during that window — that is **not** a port conflict, just a slow boot. `rebuild.sh` shows a countdown so you can tell the difference.
-
-If it never goes `healthy`:
-
-```bash
-docker compose logs cosmos | tail -50
-```
-
-The emulator sometimes fails on machines with low RAM (needs ~2 GB free) or when Docker Desktop's disk is nearly full.
-
----
-
-## 6. Still stuck?
+## 5. Still stuck?
 
 Attach the output of these three commands when asking for help — they'll show exactly what's conflicting and why:
 
 ```bash
 docker compose ps
 docker ps --format "table {{.Names}}\t{{.Ports}}"
-lsof -iTCP -sTCP:LISTEN | grep -E '6173|6174|6180|6081|6234'
+lsof -iTCP -sTCP:LISTEN | grep -E '6173|6174|6180|6432|6433'
 ```

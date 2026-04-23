@@ -17,8 +17,8 @@ Schema is in `.logs/README.md`. Log decisions (why, not what) and references (UR
 | --- | --- | --- |
 | `frontend/` | Public UI | Vue 3 + TS + Bun + Tailwind 4 + shadcn-vue, PWA/service worker |
 | `admin/` | Admin UI (internal) | Same stack, no service worker, `@tanstack/vue-query` |
-| `backend/` | API | C# .NET 10, Minimal API, Cosmos DB (SQL API) |
-| `infra/` | Terraform | Azure Container Apps + Cosmos + Front Door |
+| `backend/` | API | C# .NET 10, Minimal API, PostgreSQL (EF Core + Npgsql) |
+| `infra/` | Terraform | Azure Container Apps + Azure Database for PostgreSQL + Front Door |
 | `docs/` | Narrative docs (requirements, design, architecture) | Markdown |
 | `backlog/` | Real backlog.md project — tasks + decisions + docs | `backlog` CLI |
 | `install/` | Reproducible host bootstrap + per-project deps | Bash |
@@ -48,7 +48,7 @@ Architecture decisions go in `backlog/decisions/` (via `backlog decision create`
 - Use source-generated logging (`[LoggerMessage]`) instead of `LogX("string {interp}", ...)` — CA1848 is opt-in at `latest-Recommended` analysis level; even at `latest` it's a perf best practice.
 - `TreatWarningsAsErrors=true` in `Directory.Build.props`. `AnalysisLevel=latest` — don't raise to Recommended without suppressing the perf/globalization rules that tend to fire in templates.
 - Tests use `WebApplicationFactory<Program>` + xUnit + Shouldly (FluentAssertions 8+ switched to commercial — do not upgrade).
-- Cosmos SDK v3 **requires** Newtonsoft.Json as a direct package reference (see `Infrastructure.csproj`). Leave it pinned.
+- Postgres is the standard database. Keep repository code behind the `IItemRepository` interface — SqlServer and InMemory implementations coexist, but new features should not branch on provider.
 
 ### Frontend / admin
 

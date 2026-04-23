@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectTemplate.Api.Endpoints;
-using ProjectTemplate.Infrastructure.Cosmos;
 using ProjectTemplate.Infrastructure.InMemory;
 using ProjectTemplate.Infrastructure.Relational;
 using Scalar.AspNetCore;
@@ -24,7 +23,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod());
 });
 
-var provider = (builder.Configuration["Database:Provider"] ?? "Cosmos").Trim();
+var provider = (builder.Configuration["Database:Provider"] ?? "Postgres").Trim();
 Console.WriteLine($"[startup] Database:Provider = {provider}");
 
 switch (provider.ToLowerInvariant())
@@ -37,22 +36,19 @@ switch (provider.ToLowerInvariant())
         break;
     case "postgres":
     case "postgresql":
-        builder.Services.AddPostgresStore(builder.Configuration);
-        break;
-    case "cosmos":
-        if (string.IsNullOrWhiteSpace(builder.Configuration["Cosmos:Endpoint"]))
+        if (string.IsNullOrWhiteSpace(builder.Configuration.GetConnectionString("Postgres")))
         {
             builder.Services.AddInMemoryStore();
-            Console.WriteLine("[startup] Cosmos:Endpoint empty — falling back to in-memory store.");
+            Console.WriteLine("[startup] ConnectionStrings:Postgres empty — falling back to in-memory store.");
         }
         else
         {
-            builder.Services.AddCosmos(builder.Configuration);
+            builder.Services.AddPostgresStore(builder.Configuration);
         }
         break;
     default:
         throw new InvalidOperationException(
-            $"Unknown Database:Provider '{provider}'. Expected Cosmos, SqlServer, Postgres, or InMemory.");
+            $"Unknown Database:Provider '{provider}'. Expected Postgres, SqlServer, or InMemory.");
 }
 
 var app = builder.Build();
@@ -72,10 +68,11 @@ if (app.Environment.IsDevelopment())
         case "sqlserver":
         case "postgres":
         case "postgresql":
-            await scope.ServiceProvider.GetRequiredService<ItemDbContext>().Database.EnsureCreatedAsync();
-            break;
-        case "cosmos" when !string.IsNullOrWhiteSpace(builder.Configuration["Cosmos:Endpoint"]):
-            await CosmosServiceCollectionExtensions.EnsureCosmosDatabaseAsync(scope.ServiceProvider);
+            var ctx = scope.ServiceProvider.GetService<ItemDbContext>();
+            if (ctx is not null)
+            {
+                await ctx.Database.EnsureCreatedAsync();
+            }
             break;
     }
 }

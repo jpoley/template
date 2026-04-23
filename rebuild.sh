@@ -4,7 +4,7 @@
 # Usage:
 #   ./rebuild.sh                       # keep current DB, rebuild + restart app services only
 #   ./rebuild.sh postgres              # switch DB to postgres (keeps its volume), rebuild apps
-#   ./rebuild.sh cosmos --fresh        # wipe cosmos volume, start fresh
+#   ./rebuild.sh postgres --fresh      # wipe postgres volume, start fresh
 #   ./rebuild.sh --fresh               # wipe current provider's volume
 #   ./rebuild.sh --full                # nuclear: teardown everything across all profiles
 #   ./rebuild.sh --only backend        # only rebuild the backend image (skip frontend/admin)
@@ -19,6 +19,34 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # -----------------------------------------------------------------------------
+# Local secrets (.env is gitignored; .env.example is the schema)
+# Generate POSTGRES_PASSWORD on first run and persist it so both docker-compose
+# variable substitution and subsequent runs see the same value.
+# -----------------------------------------------------------------------------
+ENV_FILE=".env"
+if [ ! -f "$ENV_FILE" ]; then
+  : > "$ENV_FILE"
+fi
+
+ensure_secret() {
+  local key="$1" gen_cmd="$2"
+  if grep -qE "^${key}=.+" "$ENV_FILE"; then return; fi
+  local value; value="$(eval "$gen_cmd")"
+  grep -v "^${key}=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
+  mv "$ENV_FILE.tmp" "$ENV_FILE"
+  printf '%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+  chmod 600 "$ENV_FILE"
+  echo "==> Generated $key and wrote it to $ENV_FILE"
+}
+
+ensure_secret POSTGRES_PASSWORD 'openssl rand -base64 24 | tr -d "=+/\n" | cut -c1-24'
+
+set -a
+# shellcheck disable=SC1090
+. "$ENV_FILE"
+set +a
+
+# -----------------------------------------------------------------------------
 # Args
 # -----------------------------------------------------------------------------
 PROVIDER=""
@@ -27,7 +55,7 @@ FULL=0
 ONLY=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    cosmos|sqlserver|postgres) PROVIDER="$1" ;;
+    sqlserver|postgres) PROVIDER="$1" ;;
     --fresh)                   FRESH=1 ;;
     --full)                    FULL=1 ;;
     --only)                    ONLY="$2"; shift ;;
@@ -41,7 +69,7 @@ done
 # Detect currently running provider (if any)
 # -----------------------------------------------------------------------------
 detect_running() {
-  for p in cosmos sqlserver postgres; do
+  for p in postgres sqlserver; do
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "projecttemplate-$p"; then
       echo "$p"; return
     fi
@@ -51,11 +79,10 @@ detect_running() {
 RUNNING="$(detect_running)"
 
 if [ -z "$PROVIDER" ]; then
-  PROVIDER="${RUNNING:-cosmos}"
+  PROVIDER="${RUNNING:-postgres}"
 fi
 
 case "$PROVIDER" in
-  cosmos)    DB_PROVIDER="Cosmos" ;;
   sqlserver) DB_PROVIDER="SqlServer" ;;
   postgres)  DB_PROVIDER="Postgres" ;;
 esac
@@ -65,7 +92,6 @@ export DB_PROVIDER
 DB_CONTAINER="projecttemplate-${PROVIDER}"
 DB_VOLUME="projecttemplate_${PROVIDER}-data"
 case "$PROVIDER" in
-  cosmos)    DB_TIMEOUT_DEFAULT=240 ;;
   sqlserver) DB_TIMEOUT_DEFAULT=120 ;;
   postgres)  DB_TIMEOUT_DEFAULT=60  ;;
 esac
@@ -79,7 +105,7 @@ if [ -n "$ONLY" ]; then APP_SERVICES=("$ONLY"); fi
 # -----------------------------------------------------------------------------
 if [ "$FULL" -eq 1 ]; then
   echo "==> --full: tearing down all profiles + volumes"
-  docker compose --profile cosmos --profile sqlserver --profile postgres down --volumes --remove-orphans
+  docker compose --profile sqlserver --profile postgres down --volumes --remove-orphans
   RUNNING=""
 fi
 
@@ -155,15 +181,11 @@ row "http://localhost:6173" "-> :80"   "frontend"  "Public Vue UI (nginx)"
 row "http://localhost:6174" "-> :80"   "admin"     "Admin Vue UI (nginx)"
 row "http://localhost:6180" "-> :8080" "backend"   ".NET API (Kestrel on :8080)"
 case "$PROVIDER" in
-  cosmos)
-    row "http://localhost:6081" "-> :8081" "cosmos"    "Cosmos DB emulator (data/SQL API)"
-    row "tcp://localhost:6234"  "-> :1234" "cosmos"    "Cosmos emulator (side channel)"
-    ;;
   sqlserver)
     row "tcp://localhost:6433" "-> :1433" "sqlserver" "Azure SQL Edge (sa / LocalDev!1234)"
     ;;
   postgres)
-    row "tcp://localhost:6432" "-> :5432" "postgres"  "PostgreSQL 16 (postgres / LocalDev!1234)"
+    row "tcp://localhost:6432" "-> :5432" "postgres"  "PostgreSQL 16 (postgres / \$POSTGRES_PASSWORD from .env)"
     ;;
 esac
 
@@ -177,7 +199,7 @@ printf '  %-18s %s   (Development only)\n' "Backend API docs" "$(link http://loc
 echo
 echo "Next runs:"
 echo "  ./rebuild.sh                 # keep $DB_PROVIDER DB, rebuild apps only (fast)"
-echo "  ./rebuild.sh <provider>      # switch DB (cosmos|sqlserver|postgres)"
+echo "  ./rebuild.sh <provider>      # switch DB (postgres|sqlserver)"
 echo "  ./rebuild.sh --fresh         # wipe current DB volume and restart"
 echo "  ./rebuild.sh --full          # nuke everything and start over"
 echo "  ./rebuild.sh --only backend  # rebuild only backend (skip frontend/admin)"

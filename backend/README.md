@@ -1,17 +1,17 @@
 # Backend
 
-.NET 10 Web API using Azure Cosmos DB for document storage.
+.NET 10 Web API using PostgreSQL via EF Core (Npgsql) for data storage.
 
 ## Projects
 
 - `src/ProjectTemplate.Domain` — entities, repository interfaces. No framework dependencies.
-- `src/ProjectTemplate.Infrastructure` — Cosmos DB implementation of repositories, DI registration.
+- `src/ProjectTemplate.Infrastructure` — EF Core + Npgsql implementation of repositories, DI registration. SqlServer and in-memory implementations are included as alternatives.
 - `src/ProjectTemplate.Api` — Minimal API host, endpoints, Serilog, OpenAPI/Scalar.
 - `tests/ProjectTemplate.Api.Tests` — xUnit + `WebApplicationFactory` integration tests.
 
 ## Run locally
 
-Against the Cosmos emulator (via `docker compose up cosmos`):
+Against the Postgres container (via `docker compose --profile postgres up postgres`):
 
 ```bash
 dotnet run --project src/ProjectTemplate.Api
@@ -21,12 +21,9 @@ Open http://localhost:6180/scalar for API docs (Development env only).
 
 ## Configuration
 
-`Cosmos:*` in `appsettings.json`. Use one of:
+`ConnectionStrings:Postgres` in `appsettings.json`. Override per-environment via environment variables, e.g. `ConnectionStrings__Postgres`.
 
-- `Key` for emulator / local.
-- `UseManagedIdentity: true` in Azure (Container Apps with a user-assigned identity and `Cosmos DB Built-in Data Contributor` role assignment).
-
-Override per-environment via environment variables, e.g. `Cosmos__Endpoint`, `Cosmos__Key`.
+If `ConnectionStrings:Postgres` is empty in Development, the backend falls back to the in-memory store for quick native dev.
 
 ## Tests
 
@@ -39,7 +36,6 @@ dotnet test
 ```bash
 docker build -t projecttemplate-backend .
 docker run -p 6180:8080 \
-  -e Cosmos__Endpoint=... \
-  -e Cosmos__Key=... \
+  -e ConnectionStrings__Postgres="Host=...;Port=5432;Database=projecttemplate;Username=...;Password=...;SslMode=Require" \
   projecttemplate-backend
 ```

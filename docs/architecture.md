@@ -15,15 +15,14 @@ flowchart TB
   AFD -->|/| FE
   AFD -->|/admin| Admin
   AFD -->|/api| API
-  API --> Cosmos[(Cosmos DB)]
+  API --> PG[(Azure Database for PostgreSQL<br/>Flexible Server)]
   API --> KV[Key Vault]
   API --> AI[App Insights]
-  API <-->|Managed Identity| Cosmos
 ```
 
 - **Azure Front Door** — global edge, TLS, WAF, path-based routing.
 - **Container Apps** — all three containers (frontend, admin, backend) in the same environment; scale independently.
-- **Cosmos DB (SQL API)** — single account, one database, one container (`items`) to start. Provisioned or serverless depending on load profile.
+- **Azure Database for PostgreSQL (Flexible Server)** — single server per environment, one database (`projecttemplate`). Connection string injected as a Container App secret. Swap to AAD-token auth via `active_directory_auth_enabled` when ready.
 - **Key Vault** — secrets (connection strings, API keys). Container Apps uses user-assigned managed identity to pull.
 - **Application Insights** — traces/metrics/logs. Backend ships via OpenTelemetry/Serilog.
 
@@ -40,6 +39,6 @@ GitHub Actions:
 
 ## Security
 
-- Managed identity over secrets wherever Azure supports it (Cosmos, Key Vault, Storage).
+- Managed identity over secrets wherever Azure supports it (ACR pull, Key Vault, Storage). Postgres uses password auth by default; flip to AAD auth for production.
 - Admin UI behind Entra ID or IP allowlist at Front Door.
 - All containers run as non-root.

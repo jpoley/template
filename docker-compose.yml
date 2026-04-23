@@ -3,37 +3,15 @@ name: projecttemplate
 # ------------------------------------------------------------------------------
 # Database provider is selected via compose profiles. Exactly one of these
 # should be active at a time:
-#   docker compose --profile cosmos    up ...
-#   docker compose --profile sqlserver up ...
 #   docker compose --profile postgres  up ...
+#   docker compose --profile sqlserver up ...
 #
+# Postgres is the default; SqlServer is retained as an optional alternative.
 # The `backend` service always runs; it reads Database__Provider from the env.
 # Use `./rebuild.sh <provider>` for the easy path.
 # ------------------------------------------------------------------------------
 
 services:
-  cosmos:
-    profiles: ["cosmos"]
-    # vNext preview Linux emulator: native arm64 + amd64 manifests, HTTP-only
-    # (no TLS dance). The SDK handshake issue we hit earlier was emulator replica
-    # discovery, not TLS — LimitToEndpoint=true on the client (see
-    # CosmosServiceCollectionExtensions) resolves it here as well.
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
-    container_name: projecttemplate-cosmos
-    ports:
-      - "6081:8081"
-      - "6234:1234"
-    environment:
-      PROTOCOL: "http"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/"]
-      interval: 10s
-      timeout: 3s
-      retries: 30
-      start_period: 40s
-    volumes:
-      - cosmos-data:/data
-
   sqlserver:
     profiles: ["sqlserver"]
     # Azure SQL Edge: Microsoft's SQL Server-compatible image with native arm64
@@ -67,7 +45,7 @@ services:
     ports:
       - "6432:5432"
     environment:
-      POSTGRES_PASSWORD: "LocalDev!1234"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set — run ./rebuild.sh to auto-generate it in .env}"
       POSTGRES_DB: "projecttemplate"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d projecttemplate"]
@@ -89,9 +67,6 @@ services:
         BUILD_CONFIG: Debug
     container_name: projecttemplate-backend
     depends_on:
-      cosmos:
-        condition: service_healthy
-        required: false
       sqlserver:
         condition: service_healthy
         required: false
@@ -101,17 +76,10 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
-      Database__Provider: "${DB_PROVIDER:-Cosmos}"
-      # Cosmos (emulator well-known key). vNext preview uses plain HTTP.
-      Cosmos__Endpoint: "http://cosmos:8081"
-      Cosmos__Key: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
-      Cosmos__DatabaseName: "projecttemplate"
-      Cosmos__ContainerName: "items"
-      Cosmos__UseManagedIdentity: "false"
-      Cosmos__IsEmulator: "true"
-      # Relational connection strings (cross-container hostnames)
+      Database__Provider: "${DB_PROVIDER:-Postgres}"
+      # Connection strings (cross-container hostnames)
       ConnectionStrings__SqlServer: "Server=sqlserver,1433;Database=projecttemplate;User Id=sa;Password=LocalDev!1234;TrustServerCertificate=True;"
-      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=projecttemplate;Username=postgres;Password=LocalDev!1234"
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=projecttemplate;Username=postgres;Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set — run ./rebuild.sh to auto-generate it in .env}"
       Cors__Origins__0: "http://localhost:6173"
       Cors__Origins__1: "http://localhost:6174"
     ports:
@@ -138,6 +106,5 @@ services:
       - "6174:80"
 
 volumes:
-  cosmos-data:
   sqlserver-data:
   postgres-data:

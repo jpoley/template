@@ -48,16 +48,18 @@ module "registry" {
   tags           = local.base_tags
 }
 
-module "cosmos" {
-  source = "./modules/cosmos"
+module "postgres" {
+  source = "./modules/postgres"
 
   name_prefix            = local.name_prefix
   suffix                 = random_string.suffix.result
   location               = azurerm_resource_group.main.location
   resource_group         = azurerm_resource_group.main.name
-  consistency_level      = var.cosmos_consistency_level
-  throughput_mode        = var.cosmos_throughput_mode
-  provisioned_throughput = var.cosmos_provisioned_throughput
+  sku_name               = var.postgres_sku_name
+  storage_mb             = var.postgres_storage_mb
+  postgres_version       = var.postgres_version
+  administrator_login    = var.postgres_administrator_login
+  administrator_password = var.postgres_administrator_password
   tags                   = local.base_tags
 }
 
@@ -71,10 +73,7 @@ module "container_apps" {
   acr_login_server           = module.registry.login_server
   acr_id                     = module.registry.id
 
-  cosmos_endpoint       = module.cosmos.endpoint
-  cosmos_account_id     = module.cosmos.account_id
-  cosmos_database_name  = module.cosmos.database_name
-  cosmos_container_name = module.cosmos.container_name
+  postgres_connection_string = module.postgres.connection_string
 
   backend_image        = var.backend_image
   frontend_image       = var.frontend_image

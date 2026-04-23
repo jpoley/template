@@ -49,10 +49,10 @@ Type-specific fields:
   "type": "decision",
   "task": "TASK-23",
   "agent": "claude-code",
-  "summary": "Chose serverless Cosmos for dev, provisioned for prod.",
-  "rationale": "Dev traffic is bursty and under the free tier; prod needs predictable RU/s.",
-  "alternatives_considered": ["provisioned for both", "serverless for both"],
-  "links": ["backlog/decisions/decision-2 - Use-Cosmos-DB-SQL-API-as-primary-store.md"]
+  "summary": "Chose B_Standard_B1ms for dev Postgres, GP tier for prod.",
+  "rationale": "Dev traffic is bursty and the burstable tier is cheap; prod needs predictable IOPS.",
+  "alternatives_considered": ["GP for both", "B for both"],
+  "links": ["backlog/decisions/decision-2 - Use-PostgreSQL-as-primary-store.md"]
 }
 ```
 
@@ -65,9 +65,9 @@ Type-specific fields:
   "type": "reference",
   "task": "TASK-23",
   "agent": "claude-code",
-  "summary": "Consulted Cosmos serverless pricing page.",
-  "url": "https://learn.microsoft.com/azure/cosmos-db/serverless",
-  "quote": "Serverless is billed per RU consumed, with a max throughput of 5,000 RU/s per container."
+  "summary": "Consulted Azure Database for PostgreSQL Flexible Server pricing page.",
+  "url": "https://learn.microsoft.com/azure/postgresql/flexible-server/concepts-pricing-tiers",
+  "quote": "The Burstable compute tier is best suited for workloads that don't need the full CPU continuously."
 }
 ```
 

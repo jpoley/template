@@ -22,7 +22,7 @@ One-paragraph summary of what the product does and who it's for.
 
 - **Availability**: target SLO (e.g., 99.9% monthly).
 - **Latency**: p95 API response under N ms.
-- **Security**: authentication, authorization, data-at-rest encryption (Cosmos handles this), data-in-transit (TLS).
+- **Security**: authentication, authorization, data-at-rest encryption (Azure Database for PostgreSQL handles this), data-in-transit (TLS).
 - **Compliance**: any frameworks that apply (SOC2, HIPAA, GDPR …).
 - **Observability**: structured logs, metrics, traces to Azure Monitor / App Insights.
 

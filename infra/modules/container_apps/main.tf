@@ -4,10 +4,10 @@ variable "resource_group" { type = string }
 variable "log_analytics_workspace_id" { type = string }
 variable "acr_login_server" { type = string }
 variable "acr_id" { type = string }
-variable "cosmos_endpoint" { type = string }
-variable "cosmos_account_id" { type = string }
-variable "cosmos_database_name" { type = string }
-variable "cosmos_container_name" { type = string }
+variable "postgres_connection_string" {
+  type      = string
+  sensitive = true
+}
 variable "backend_image" { type = string }
 variable "frontend_image" { type = string }
 variable "admin_image" { type = string }
@@ -31,15 +31,6 @@ resource "azurerm_role_assignment" "acr_pull" {
   scope                = var.acr_id
   role_definition_name = "AcrPull"
   principal_id         = azurerm_user_assigned_identity.apps.principal_id
-}
-
-# Cosmos DB built-in Data Contributor
-resource "azurerm_cosmosdb_sql_role_assignment" "backend" {
-  resource_group_name = var.resource_group
-  account_name        = reverse(split("/", var.cosmos_account_id))[0]
-  role_definition_id  = "${var.cosmos_account_id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002"
-  principal_id        = azurerm_user_assigned_identity.apps.principal_id
-  scope               = var.cosmos_account_id
 }
 
 resource "azurerm_container_app_environment" "main" {
@@ -78,6 +69,11 @@ resource "azurerm_container_app" "backend" {
     }
   }
 
+  secret {
+    name  = "postgres-connection-string"
+    value = var.postgres_connection_string
+  }
+
   template {
     min_replicas = var.backend_min_replicas
     max_replicas = var.backend_max_replicas
@@ -93,20 +89,12 @@ resource "azurerm_container_app" "backend" {
         value = "Production"
       }
       env {
-        name  = "Cosmos__Endpoint"
-        value = var.cosmos_endpoint
+        name  = "Database__Provider"
+        value = "Postgres"
       }
       env {
-        name  = "Cosmos__DatabaseName"
-        value = var.cosmos_database_name
-      }
-      env {
-        name  = "Cosmos__ContainerName"
-        value = var.cosmos_container_name
-      }
-      env {
-        name  = "Cosmos__UseManagedIdentity"
-        value = "true"
+        name        = "ConnectionStrings__Postgres"
+        secret_name = "postgres-connection-string"
       }
       env {
         name  = "AZURE_CLIENT_ID"

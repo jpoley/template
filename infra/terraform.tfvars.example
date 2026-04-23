@@ -9,9 +9,14 @@ backend_image  = "<acr-name>.azurecr.io/projecttemplate/backend:latest"
 frontend_image = "<acr-name>.azurecr.io/projecttemplate/frontend:latest"
 admin_image    = "<acr-name>.azurecr.io/projecttemplate/admin:latest"
 
-# Cosmos
-cosmos_consistency_level = "Session"
-cosmos_throughput_mode   = "serverless"
+# PostgreSQL (Azure Database for PostgreSQL Flexible Server)
+postgres_sku_name            = "B_Standard_B1ms"
+postgres_storage_mb          = 32768
+postgres_version             = "16"
+postgres_administrator_login = "pgadmin"
+# Do NOT commit the password. Supply via TF_VAR_postgres_administrator_password
+# or a gitignored *.auto.tfvars file.
+# postgres_administrator_password = "set-via-env-or-secret-tfvars"
 
 # Backend scale
 backend_min_replicas = 1

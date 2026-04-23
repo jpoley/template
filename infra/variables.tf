@@ -29,27 +29,35 @@ variable "tags" {
   default     = {}
 }
 
-# --- Cosmos DB ----------------------------------------------------------
-variable "cosmos_consistency_level" {
-  description = "Cosmos default consistency level."
+# --- PostgreSQL ---------------------------------------------------------
+variable "postgres_sku_name" {
+  description = "Azure Database for PostgreSQL Flexible Server SKU (e.g. B_Standard_B1ms, GP_Standard_D2s_v3)."
   type        = string
-  default     = "Session"
+  default     = "B_Standard_B1ms"
 }
 
-variable "cosmos_throughput_mode" {
-  description = "provisioned | serverless"
-  type        = string
-  default     = "serverless"
-  validation {
-    condition     = contains(["provisioned", "serverless"], var.cosmos_throughput_mode)
-    error_message = "cosmos_throughput_mode must be provisioned or serverless."
-  }
-}
-
-variable "cosmos_provisioned_throughput" {
-  description = "RU/s when cosmos_throughput_mode = provisioned."
+variable "postgres_storage_mb" {
+  description = "Storage for the Flexible Server in MB."
   type        = number
-  default     = 400
+  default     = 32768
+}
+
+variable "postgres_version" {
+  description = "PostgreSQL major version."
+  type        = string
+  default     = "16"
+}
+
+variable "postgres_administrator_login" {
+  description = "Administrator login for the Flexible Server."
+  type        = string
+  default     = "pgadmin"
+}
+
+variable "postgres_administrator_password" {
+  description = "Administrator password for the Flexible Server. Supply via TF_VAR_postgres_administrator_password or a sensitive tfvars file; never commit."
+  type        = string
+  sensitive   = true
 }
 
 # --- Container Apps -----------------------------------------------------

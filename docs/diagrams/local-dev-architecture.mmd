@@ -18,9 +18,8 @@ flowchart TB
 
     subgraph dbs["database (one profile active)"]
         direction LR
-        cosmos["<b>cosmos</b><br/>emulator vnext-preview<br/>arm64<br/>→ host 6081"]
-        sqlserver["<b>sqlserver</b><br/>Azure SQL Edge<br/>arm64<br/>→ host 6433"]
         postgres["<b>postgres</b><br/>postgres:16-alpine<br/>arm64<br/>→ host 6432"]
+        sqlserver["<b>sqlserver</b><br/>Azure SQL Edge<br/>arm64<br/>→ host 6433"]
     end
 
     browser -->|":6173"| frontend
@@ -28,13 +27,12 @@ flowchart TB
     frontend -->|"/api/*<br/>nginx proxy_pass"| backend
     admin    -->|"/api/*<br/>nginx proxy_pass"| backend
 
-    backend -.->|"selected by<br/>Database:Provider"| cosmos
+    backend -.->|"selected by<br/>Database:Provider<br/>(default)"| postgres
     backend -.->|"selected by<br/>Database:Provider"| sqlserver
-    backend -.->|"selected by<br/>Database:Provider"| postgres
 
     classDef appBox fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     classDef dbBox  fill:#fff3e0,stroke:#ef6c00,color:#e65100
     classDef ext    fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
     class frontend,admin,backend appBox
-    class cosmos,sqlserver,postgres dbBox
+    class postgres,sqlserver dbBox
     class browser ext

@@ -37,7 +37,7 @@ The debugger (`vsdbg`) is already baked into the backend's dev image. The `.vsco
 ### Step 1. Start the stack
 
 ```bash
-./rebuild.sh postgres     # or cosmos or sqlserver
+./rebuild.sh postgres     # or sqlserver
 ```
 
 Wait for the script to finish. The backend is now running inside `projecttemplate-backend`.

@@ -6,8 +6,8 @@ output "container_registry" {
   value = module.registry.login_server
 }
 
-output "cosmos_endpoint" {
-  value = module.cosmos.endpoint
+output "postgres_fqdn" {
+  value = module.postgres.fqdn
 }
 
 output "frontend_url" {
