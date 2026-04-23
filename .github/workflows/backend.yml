@@ -19,15 +19,15 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
           dotnet-quality: preview
       - run: dotnet restore Backend.sln
       - run: dotnet build Backend.sln -c Release --no-restore /warnaserror
       - run: dotnet test Backend.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-test-results
