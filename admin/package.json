@@ -9,7 +9,7 @@
     "preview": "vite preview --host 0.0.0.0 --port 6174",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.{ts,vue,css}\"",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

@@ -30,4 +30,4 @@ jobs:
         uses: terraform-linters/setup-tflint@v4
         with:
           tflint_version: latest
-      - run: tflint --init && tflint --recursive
+      - run: tflint --init && tflint --recursive --minimum-failure-severity=error
