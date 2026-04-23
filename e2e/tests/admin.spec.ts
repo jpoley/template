@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const ADMIN = process.env.ADMIN_URL ?? 'http://127.0.0.1:5174'
+const ADMIN = process.env.ADMIN_URL ?? 'http://127.0.0.1:6174'
 
 test.describe('admin', () => {
   test('dashboard reports healthy backend', async ({ page }) => {

@@ -48,10 +48,10 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    port: 6173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:8080',
+        target: process.env.VITE_API_URL || 'http://localhost:6180',
         changeOrigin: true,
       },
     },

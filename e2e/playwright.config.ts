@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const FRONTEND_PORT = 5173
-const ADMIN_PORT = 5174
-const BACKEND_PORT = 8080
+const FRONTEND_PORT = 6173
+const ADMIN_PORT = 6174
+const BACKEND_PORT = 6180
 
 export default defineConfig({
   testDir: './tests',

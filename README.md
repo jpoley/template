@@ -75,22 +75,32 @@ Two options.
 ( cd backend && ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/ProjectTemplate.Api )
 
 # In separate shells:
-( cd frontend && bunx vite --port 5173 )
-( cd admin    && bunx vite --port 5174 )
+( cd frontend && bunx vite --port 6173 )
+( cd admin    && bunx vite --port 6174 )
 ```
 
-**Docker** (closer to prod, includes Cosmos emulator):
+![Local dev architecture](docs/diagrams/local-dev-architecture.png)
+
+**Docker** (closer to prod, pick one database):
 
 ```bash
-docker compose up --build
+./rebuild.sh               # default: cosmos (GA Linux emulator)
+./rebuild.sh postgres      # PostgreSQL 16
+./rebuild.sh sqlserver     # SQL Server 2022
 ```
+
+All three provider implementations are built and ready; only the chosen DB container starts (via compose profiles). The backend reads `Database:Provider` from config and wires up the matching repository. Switching providers wipes the previous DB container — data does not migrate between backends.
 
 | Service    | URL                         |
 | ---------- | --------------------------- |
-| Frontend   | http://localhost:5173       |
-| Admin      | http://localhost:5174       |
-| Backend    | http://localhost:8080       |
-| Cosmos     | http://localhost:8081       |
+| Frontend   | http://localhost:6173       |
+| Admin      | http://localhost:6174       |
+| Backend    | http://localhost:6180       |
+| Cosmos     | https://localhost:6081      |
+| SQL Server | `sqlcmd -S localhost,6433 -U sa -P 'LocalDev!1234'` |
+| Postgres   | `psql -h localhost -p 6432 -U postgres` (password `LocalDev!1234`) |
+
+See [`docs/troubleshooting/port-conflicts.md`](docs/troubleshooting/port-conflicts.md) if any port is already in use, [`docs/database-providers.md`](docs/database-providers.md) for how provider selection works, or [`docs/debugging-in-container.md`](docs/debugging-in-container.md) to step through backend code in VS Code while it runs inside the container.
 
 No Docker Desktop? See `install/install-docker-rootless.sh` for the rootless path.
 

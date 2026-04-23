@@ -8,5 +8,5 @@ Not intended for public exposure — `meta robots: noindex,nofollow` set in `ind
 
 ```bash
 bun install
-bun run dev   # http://localhost:5174
+bun run dev   # http://localhost:6174
 ```

@@ -1,0 +1,40 @@
+---
+title: Local dev stack — docker compose services and active DB profile
+config:
+  theme: default
+  flowchart:
+    curve: basis
+    htmlLabels: true
+---
+flowchart TB
+    browser(["Browser"])
+
+    subgraph apps["app services (always on)"]
+        direction LR
+        frontend["<b>frontend</b><br/>Vue 3 + PWA<br/>nginx : 80<br/>→ host 6173"]
+        admin["<b>admin</b><br/>Vue 3<br/>nginx : 80<br/>→ host 6174"]
+        backend["<b>backend</b><br/>.NET 10 API<br/>Kestrel : 8080<br/>→ host 6180"]
+    end
+
+    subgraph dbs["database (one profile active)"]
+        direction LR
+        cosmos["<b>cosmos</b><br/>emulator vnext-preview<br/>arm64<br/>→ host 6081"]
+        sqlserver["<b>sqlserver</b><br/>Azure SQL Edge<br/>arm64<br/>→ host 6433"]
+        postgres["<b>postgres</b><br/>postgres:16-alpine<br/>arm64<br/>→ host 6432"]
+    end
+
+    browser -->|":6173"| frontend
+    browser -->|":6174"| admin
+    frontend -->|"/api/*<br/>nginx proxy_pass"| backend
+    admin    -->|"/api/*<br/>nginx proxy_pass"| backend
+
+    backend -.->|"selected by<br/>Database:Provider"| cosmos
+    backend -.->|"selected by<br/>Database:Provider"| sqlserver
+    backend -.->|"selected by<br/>Database:Provider"| postgres
+
+    classDef appBox fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef dbBox  fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    classDef ext    fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    class frontend,admin,backend appBox
+    class cosmos,sqlserver,postgres dbBox
+    class browser ext

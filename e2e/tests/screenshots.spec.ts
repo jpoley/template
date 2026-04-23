@@ -1,7 +1,7 @@
 import { test } from '@playwright/test'
 
-const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173'
-const ADMIN = process.env.ADMIN_URL ?? 'http://127.0.0.1:5174'
+const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:6173'
+const ADMIN = process.env.ADMIN_URL ?? 'http://127.0.0.1:6174'
 
 test('capture: frontend home', async ({ page }) => {
   await page.goto(FRONTEND)

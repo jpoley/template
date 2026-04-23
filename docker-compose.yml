@@ -1,17 +1,32 @@
 name: projecttemplate
 
+# ------------------------------------------------------------------------------
+# Database provider is selected via compose profiles. Exactly one of these
+# should be active at a time:
+#   docker compose --profile cosmos    up ...
+#   docker compose --profile sqlserver up ...
+#   docker compose --profile postgres  up ...
+#
+# The `backend` service always runs; it reads Database__Provider from the env.
+# Use `./rebuild.sh <provider>` for the easy path.
+# ------------------------------------------------------------------------------
+
 services:
   cosmos:
-    # Linux-based Cosmos emulator (vNext preview). Single-partition, no TLS gymnastics.
+    profiles: ["cosmos"]
+    # vNext preview Linux emulator: native arm64 + amd64 manifests, HTTP-only
+    # (no TLS dance). The SDK handshake issue we hit earlier was emulator replica
+    # discovery, not TLS — LimitToEndpoint=true on the client (see
+    # CosmosServiceCollectionExtensions) resolves it here as well.
     image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
     container_name: projecttemplate-cosmos
     ports:
-      - "8081:8081"
-      - "1234:1234"
+      - "6081:8081"
+      - "6234:1234"
     environment:
       PROTOCOL: "http"
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8081/_explorer/emulator.pem"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8081/"]
       interval: 10s
       timeout: 3s
       retries: 30
@@ -19,26 +34,88 @@ services:
     volumes:
       - cosmos-data:/data
 
+  sqlserver:
+    profiles: ["sqlserver"]
+    # Azure SQL Edge: Microsoft's SQL Server-compatible image with native arm64
+    # + amd64 manifests. T-SQL surface matches what EF Core's SqlServer provider
+    # uses. Microsoft stopped shipping new versions in 2024, but the image is
+    # stable and the EF Core provider speaks to it unchanged. Use real SQL Server
+    # in production via Azure SQL / Managed Instance.
+    image: mcr.microsoft.com/azure-sql-edge:latest
+    container_name: projecttemplate-sqlserver
+    ports:
+      - "6433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "LocalDev!1234"
+    healthcheck:
+      # Azure SQL Edge doesn't ship sqlcmd. Use a bash /dev/tcp probe on 1433;
+      # the backend's EF Core retry-on-failure covers the short window between
+      # "port accepting" and "engine fully ready".
+      test: ["CMD-SHELL", "bash -c '(</dev/tcp/localhost/1433) 2>/dev/null'"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 45s
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+  postgres:
+    profiles: ["postgres"]
+    image: postgres:16-alpine
+    container_name: projecttemplate-postgres
+    ports:
+      - "6432:5432"
+    environment:
+      POSTGRES_PASSWORD: "LocalDev!1234"
+      POSTGRES_DB: "projecttemplate"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d projecttemplate"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      # Local dev always uses the debug image (vsdbg + Debug build). Production
+      # builds (CI, Azure Container Apps) should target `runtime` explicitly.
+      target: debug
+      args:
+        BUILD_CONFIG: Debug
     container_name: projecttemplate-backend
     depends_on:
       cosmos:
         condition: service_healthy
+        required: false
+      sqlserver:
+        condition: service_healthy
+        required: false
+      postgres:
+        condition: service_healthy
+        required: false
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      Database__Provider: "${DB_PROVIDER:-Cosmos}"
+      # Cosmos (emulator well-known key). vNext preview uses plain HTTP.
       Cosmos__Endpoint: "http://cosmos:8081"
       Cosmos__Key: "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="
       Cosmos__DatabaseName: "projecttemplate"
       Cosmos__ContainerName: "items"
       Cosmos__UseManagedIdentity: "false"
-      Cors__Origins__0: "http://localhost:5173"
-      Cors__Origins__1: "http://localhost:5174"
+      Cosmos__IsEmulator: "true"
+      # Relational connection strings (cross-container hostnames)
+      ConnectionStrings__SqlServer: "Server=sqlserver,1433;Database=projecttemplate;User Id=sa;Password=LocalDev!1234;TrustServerCertificate=True;"
+      ConnectionStrings__Postgres: "Host=postgres;Port=5432;Database=projecttemplate;Username=postgres;Password=LocalDev!1234"
+      Cors__Origins__0: "http://localhost:6173"
+      Cors__Origins__1: "http://localhost:6174"
     ports:
-      - "8080:8080"
+      - "6180:8080"
 
   frontend:
     build:
@@ -48,7 +125,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "5173:80"
+      - "6173:80"
 
   admin:
     build:
@@ -58,7 +135,9 @@ services:
     depends_on:
       - backend
     ports:
-      - "5174:80"
+      - "6174:80"
 
 volumes:
   cosmos-data:
+  sqlserver-data:
+  postgres-data:

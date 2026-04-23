@@ -1,0 +1,30 @@
+---
+title: Remote debug attach — VS Code to containerized .NET process
+config:
+  theme: default
+  flowchart:
+    curve: basis
+    htmlLabels: true
+---
+flowchart LR
+    subgraph host["Your laptop"]
+        vscode["<b>VS Code</b><br/>C# Dev Kit"]
+        src["backend/src/...<br/>(your local files)"]
+    end
+
+    subgraph docker["projecttemplate-backend container"]
+        vsdbg["<b>/vsdbg/vsdbg</b><br/>Microsoft .NET debugger"]
+        dotnet["<b>dotnet</b> (PID 1)<br/>ProjectTemplate.Api.dll"]
+        pdbs["/app/*.pdb<br/>portable symbols"]
+    end
+
+    vscode -->|"docker exec -i<br/>stdio pipe<br/>DAP JSON"| vsdbg
+    vsdbg -->|"ptrace<br/>(same UID, no caps needed)"| dotnet
+    pdbs -.->|"loaded on demand"| vsdbg
+    src -. "sourceFileMap<br/>/src → ./backend" .-> vscode
+
+    classDef hostBox  fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    classDef dockBox  fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    classDef plain    fill:#ffffff,stroke:#555,color:#222
+    class vscode,src hostBox
+    class vsdbg,dotnet,pdbs dockBox

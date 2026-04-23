@@ -17,7 +17,7 @@ Against the Cosmos emulator (via `docker compose up cosmos`):
 dotnet run --project src/ProjectTemplate.Api
 ```
 
-Open http://localhost:8080/scalar for API docs (Development env only).
+Open http://localhost:6180/scalar for API docs (Development env only).
 
 ## Configuration
 
@@ -38,7 +38,7 @@ dotnet test
 
 ```bash
 docker build -t projecttemplate-backend .
-docker run -p 8080:8080 \
+docker run -p 6180:8080 \
   -e Cosmos__Endpoint=... \
   -e Cosmos__Key=... \
   projecttemplate-backend

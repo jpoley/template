@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:5173'
+const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:6173'
 
 test.describe('frontend', () => {
   test('home page loads and shows backend health', async ({ page }) => {

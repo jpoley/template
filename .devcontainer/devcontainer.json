@@ -21,12 +21,12 @@
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.config/gh,target=/home/vscode/.config/gh,type=bind,consistency=cached"
   ],
-  "forwardPorts": [5173, 5174, 8080, 8081],
+  "forwardPorts": [6173, 6174, 6180, 6081],
   "portsAttributes": {
-    "5173": { "label": "Frontend" },
-    "5174": { "label": "Admin" },
-    "8080": { "label": "Backend API" },
-    "8081": { "label": "Cosmos Emulator" }
+    "6173": { "label": "Frontend" },
+    "6174": { "label": "Admin" },
+    "6180": { "label": "Backend API" },
+    "6081": { "label": "Cosmos Emulator" }
   },
   "postCreateCommand": "bash .devcontainer/postCreate.sh",
   "customizations": {

@@ -6,7 +6,7 @@ Vue 3 + TypeScript + Bun + Tailwind 4 + shadcn-vue, PWA/service worker via `vite
 
 ```bash
 bun install
-bun run dev          # http://localhost:5173
+bun run dev          # http://localhost:6173
 bun run build
 bun run preview
 bun run test
@@ -30,7 +30,7 @@ The PWA plugin auto-generates `sw.js` and a web manifest in `dist/`. API request
 
 ```bash
 docker build -t projecttemplate-frontend .
-docker run -p 5173:80 projecttemplate-frontend
+docker run -p 6173:80 projecttemplate-frontend
 ```
 
 The image is nginx-served static; it does not include the API. Put a reverse proxy (Azure Front Door, nginx, Traefik) in front in production to route `/api/*` to the backend.
