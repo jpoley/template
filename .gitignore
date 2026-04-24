@@ -32,6 +32,7 @@ bun-debug.log*
 # Node / Bun
 node_modules/
 bun.lockb
+.bun/
 dist/
 dist-ssr/
 coverage/
@@ -39,6 +40,7 @@ coverage/
 .output/
 .vite/
 *.tsbuildinfo
+.eslintcache
 
 # .NET
 bin/
@@ -72,6 +74,10 @@ override.tf.json
 
 # Docker
 .docker/
+docker-compose.override.yml
+
+# act (local GitHub Actions runner)
+.secrets
 
 # Agent working dirs — keep structure, ignore run output
 .logs/*.jsonl
