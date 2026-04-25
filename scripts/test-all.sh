@@ -19,6 +19,13 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Auto-pick up the enterprise CA bundle if the toggle is on. See
+# docs/enterprise-proxy.md.
+if [ -f "$REPO_ROOT/certs/enterprise-ca.env" ]; then
+  # shellcheck disable=SC1091
+  . "$REPO_ROOT/certs/enterprise-ca.env"
+fi
+
 KEEP_GOING=0
 RUN_SMOKE=1
 RUN_CI=0

@@ -22,7 +22,22 @@ Schema is in `.logs/README.md`. Log decisions (why, not what) and references (UR
 | `docs/` | Narrative docs (requirements, design, architecture) | Markdown |
 | `backlog/` | Real backlog.md project — tasks + decisions + docs | `backlog` CLI |
 | `install/` | Reproducible host bootstrap + per-project deps | Bash |
+| `certs/` | Enterprise MITM CA bundle drop-in (gitignored cert + tracked installer) | — |
 | `.logs/` | Per-session JSONL decision/reference log | — |
+
+## Behind a corporate TLS proxy?
+
+If everything in this repo (bun, dotnet restore, docker pulls, terraform init,
+runtime HttpClient) is failing with cert errors, you're behind Zscaler /
+Netskope / Prisma Access / a Squid+MITM box. One toggle:
+
+```bash
+scripts/enterprise-cert.sh enable /path/to/your-corp-root.pem
+eval "$(scripts/enterprise-cert.sh env)"
+./rebuild.sh
+```
+
+Full reference: [`docs/enterprise-proxy.md`](docs/enterprise-proxy.md).
 
 ## Task + decision management
 
