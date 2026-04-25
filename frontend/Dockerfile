@@ -2,6 +2,13 @@
 FROM oven/bun:1 AS build
 WORKDIR /app
 
+# Enterprise MITM proxy (Zscaler etc.) — see docs/enterprise-proxy.md.
+# `enterprise-ca` is a named build context wired up in docker-compose.yml.
+# install-ca-in-image.sh no-ops when no real cert is staged.
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
 COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile || bun install
 
@@ -10,6 +17,9 @@ RUN bun run build
 
 # --- runtime stage ------------------------------------------------------
 FROM nginx:1.29-alpine AS runtime
+
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

@@ -60,6 +60,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      # `enterprise-ca` is a named build context exposing the repo's certs/
+      # directory. install-ca-in-image.sh inside it no-ops when no real cert
+      # is staged. See docs/enterprise-proxy.md.
+      additional_contexts:
+        enterprise-ca: ./certs
       # Local dev always uses the debug image (vsdbg + Debug build). Production
       # builds (CI, Azure Container Apps) should target `runtime` explicitly.
       target: debug
@@ -89,6 +94,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      additional_contexts:
+        enterprise-ca: ./certs
     container_name: projecttemplate-frontend
     depends_on:
       - backend
@@ -99,6 +106,8 @@ services:
     build:
       context: ./admin
       dockerfile: Dockerfile
+      additional_contexts:
+        enterprise-ca: ./certs
     container_name: projecttemplate-admin
     depends_on:
       - backend
