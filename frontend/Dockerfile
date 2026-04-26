@@ -6,7 +6,7 @@ WORKDIR /app
 # `enterprise-ca` is a named build context wired up in docker-compose.yml.
 # install-ca-in-image.sh no-ops when no real cert is staged.
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
-RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 COPY package.json bun.lockb* ./
@@ -19,7 +19,7 @@ RUN bun run build
 FROM nginx:1.29-alpine AS runtime
 
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
-RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

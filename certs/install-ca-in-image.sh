@@ -28,7 +28,10 @@ if [ -f /etc/debian_version ]; then
     rm -rf /var/lib/apt/lists/*
   fi
   install -m 0644 "$CERT_SRC" /usr/local/share/ca-certificates/enterprise-ca.crt
-  update-ca-certificates >/dev/null
+  update-ca-certificates >/dev/null || {
+    echo "[ca] update-ca-certificates failed on Debian/Ubuntu" >&2
+    exit 1
+  }
 elif [ -f /etc/alpine-release ]; then
   # Alpine's update-ca-certificates reads from /usr/share/ca-certificates/ and
   # only processes filenames listed in /etc/ca-certificates.conf — it does
@@ -43,7 +46,13 @@ elif [ -f /etc/alpine-release ]; then
   fi
   # Also drop a copy in /usr/local/share for tools that read that path directly.
   install -m 0644 "$CERT_SRC" /usr/local/share/ca-certificates/enterprise-ca.crt
-  update-ca-certificates >/dev/null 2>&1
+  # Alpine's update-ca-certificates may print "WARNING: opening from cache …
+  # APKINDEX.tar.gz: No such file or directory" to stderr — non-fatal noise
+  # (apk index cache miss). Real failures still set a non-zero exit.
+  update-ca-certificates >/dev/null || {
+    echo "[ca] update-ca-certificates failed on Alpine" >&2
+    exit 1
+  }
 else
   echo "[ca] unknown distro — extend certs/install-ca-in-image.sh" >&2
   exit 1

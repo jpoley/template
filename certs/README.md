@@ -35,7 +35,18 @@ Full reference: [`docs/enterprise-proxy.md`](../docs/enterprise-proxy.md).
 
 ## Why it lives here
 
-Git does not track `*.crt` / `*.pem` / `*.key` (see `.gitignore`), but Docker
-*does* see this directory as part of the build context. Putting the cert here
-lets every Dockerfile `COPY certs/` and run a shared install snippet without
-each image having to know the cert's path on the host.
+Git does not track `*.crt` / `*.pem` / `*.key` (see `.gitignore`). This
+directory is exposed to Docker builds as the named build context
+`enterprise-ca`, which Dockerfiles consume via `COPY --from=enterprise-ca …`
+plus the shared `install-ca-in-image.sh`. The named context must be wired in
+explicitly:
+
+- `docker compose build` / `./rebuild.sh` — already wired via
+  `additional_contexts: enterprise-ca: ./certs` in `docker-compose.yml`.
+- `.github/workflows/build-images.yml` — passes `build-contexts: enterprise-ca=./certs`.
+- ad-hoc `docker build` from a service subdir — pass
+  `--build-context enterprise-ca=../certs`.
+
+The Dockerfiles do **not** assume `certs/` is reachable from the main build
+context; without one of the above, the build fails with a missing-context
+error.

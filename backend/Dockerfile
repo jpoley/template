@@ -8,7 +8,7 @@ WORKDIR /src
 # script no-ops when no cert is staged. Doing this before `dotnet restore`
 # means NuGet sees the enterprise root.
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
-RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
 COPY global.json Directory.Build.props ./
 COPY Backend.sln ./
@@ -36,7 +36,7 @@ RUN apt-get update \
 
 # Enterprise MITM proxy support — see docs/enterprise-proxy.md.
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
-RUN sh /tmp/enterprise-ca/install-ca-in-image.sh
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
 COPY --from=build /app/publish .
 

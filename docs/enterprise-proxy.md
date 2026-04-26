@@ -22,7 +22,7 @@ eval "$(scripts/enterprise-cert.sh env)"
 ./rebuild.sh
 
 # 4. verify (optional)
-scripts/enterprise-cert.sh verify https://nuget.org
+scripts/enterprise-cert.sh verify https://www.nuget.org
 ```
 
 To turn it off:
