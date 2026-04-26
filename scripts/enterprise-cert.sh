@@ -67,8 +67,10 @@ install_to_host_trust() {
       if [ -d /usr/local/share/ca-certificates ] && command -v update-ca-certificates >/dev/null 2>&1; then
         if sudo -n true 2>/dev/null; then
           log "installing into Linux system trust (sudo, debian-family)"
-          sudo install -m 0644 "$CERT_PATH" /usr/local/share/ca-certificates/enterprise-ca.crt
-          sudo update-ca-certificates >/dev/null
+          sudo install -m 0644 "$CERT_PATH" /usr/local/share/ca-certificates/enterprise-ca.crt \
+            || log "warning: failed to install certificate into Linux system trust"
+          sudo update-ca-certificates >/dev/null \
+            || log "warning: failed to refresh Linux system trust"
         else
           log "to add to Linux system trust (optional, debian-family):"
           log "  sudo install -m 0644 $CERT_PATH /usr/local/share/ca-certificates/enterprise-ca.crt"
