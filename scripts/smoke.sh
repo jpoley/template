@@ -18,6 +18,21 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
+# Auto-pick up the enterprise CA bundle if the toggle is on. See
+# docs/enterprise-proxy.md. The cert file is the actual switch; the env file
+# is the richer set written by scripts/enterprise-cert.sh enable.
+if [ -s "$REPO_ROOT/certs/enterprise-ca.crt" ]; then
+  if [ -f "$REPO_ROOT/certs/enterprise-ca.env" ]; then
+    # shellcheck disable=SC1091
+    . "$REPO_ROOT/certs/enterprise-ca.env"
+  else
+    export NODE_EXTRA_CA_CERTS="$REPO_ROOT/certs/enterprise-ca.crt"
+    export SSL_CERT_FILE="$REPO_ROOT/certs/enterprise-ca.crt"
+    export CURL_CA_BUNDLE="$REPO_ROOT/certs/enterprise-ca.crt"
+    echo "smoke: certs/enterprise-ca.env missing; exported common CA env vars directly." >&2
+  fi
+fi
+
 PROVIDER="postgres"
 KEEP_UP=0
 BUILD_ARGS=(--build)

@@ -34,8 +34,10 @@ dotnet test
 ## Docker
 
 ```bash
-docker build -t projecttemplate-backend .
+docker build --build-context enterprise-ca=../certs -t projecttemplate-backend .
 docker run -p 6180:8080 \
   -e ConnectionStrings__Postgres="Host=...;Port=5432;Database=projecttemplate;Username=...;Password=...;SslMode=Require" \
   projecttemplate-backend
 ```
+
+`--build-context enterprise-ca=../certs` satisfies the `COPY --from=enterprise-ca` line in the Dockerfile. With no `enterprise-ca.crt` staged in `../certs`, the in-image installer no-ops; with one staged, it installs into the system trust store. See [`../docs/enterprise-proxy.md`](../docs/enterprise-proxy.md).

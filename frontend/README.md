@@ -29,8 +29,10 @@ The PWA plugin auto-generates `sw.js` and a web manifest in `dist/`. API request
 ## Docker
 
 ```bash
-docker build -t projecttemplate-frontend .
+docker build --build-context enterprise-ca=../certs -t projecttemplate-frontend .
 docker run -p 6173:80 projecttemplate-frontend
 ```
+
+`--build-context enterprise-ca=../certs` satisfies the `COPY --from=enterprise-ca` line in the Dockerfile. With no `enterprise-ca.crt` staged in `../certs`, the in-image installer no-ops; with one staged, it installs into the system trust store. See [`../docs/enterprise-proxy.md`](../docs/enterprise-proxy.md).
 
 The image is nginx-served static; it does not include the API. Put a reverse proxy (Azure Front Door, nginx, Traefik) in front in production to route `/api/*` to the backend.

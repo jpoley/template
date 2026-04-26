@@ -3,6 +3,7 @@
 - [requirements.md](requirements.md) — what this project must do.
 - [design.md](design.md) — system design, components, data flow.
 - [architecture.md](architecture.md) — deployment topology, runtime boundaries, ops concerns.
+- [enterprise-proxy.md](enterprise-proxy.md) — running behind Zscaler / a TLS-intercepting proxy.
 
 Architecture decisions live in **`backlog/decisions/`** (managed by the `backlog` CLI — `backlog decision create`). Static, narrative docs live here.
 

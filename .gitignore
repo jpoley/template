@@ -22,6 +22,9 @@ Thumbs.db
 *.crt
 *.pfx
 
+# Enterprise CA toggle — written by scripts/enterprise-cert.sh
+certs/enterprise-ca.env
+
 # Logs (except the .logs directory format README)
 *.log
 npm-debug.log*

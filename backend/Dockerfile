@@ -3,6 +3,13 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIG=Release
 WORKDIR /src
 
+# Enterprise MITM proxy support — see docs/enterprise-proxy.md. The named
+# `enterprise-ca` build context is supplied by docker-compose.yml; the install
+# script no-ops when no cert is staged. Doing this before `dotnet restore`
+# means NuGet sees the enterprise root.
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
+
 COPY global.json Directory.Build.props ./
 COPY Backend.sln ./
 COPY src/ProjectTemplate.Domain/ProjectTemplate.Domain.csproj src/ProjectTemplate.Domain/
@@ -26,6 +33,10 @@ WORKDIR /app
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/*
+
+# Enterprise MITM proxy support — see docs/enterprise-proxy.md.
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
 COPY --from=build /app/publish .
 
