@@ -32,6 +32,12 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
+          # Named build context required by each Dockerfile's `COPY --from=
+          # enterprise-ca` line. CI builds ship with no real cert in ./certs
+          # (the production path) — the in-image installer then no-ops. See
+          # docs/enterprise-proxy.md.
+          build-contexts: |
+            enterprise-ca=./certs
           push: true
           tags: |
             ${{ env.REGISTRY }}/projecttemplate/${{ matrix.service }}:${{ github.sha }}

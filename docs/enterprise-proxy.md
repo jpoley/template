@@ -39,8 +39,10 @@ The single source of truth is **the file `certs/enterprise-ca.crt`**.
 - exists + non-empty → enterprise mode is ON
 - missing or empty   → enterprise mode is OFF (default)
 
-That's it. There is no environment flag to set, no compose profile to pick,
-no `--enterprise` argument anywhere. You drop the cert in, the rest follows.
+There is no environment flag, no compose profile, no `--enterprise` argument.
+Drop the cert in (ideally via `scripts/enterprise-cert.sh enable`, which
+also generates `certs/enterprise-ca.env` with the full env-var set) and the
+rest follows.
 
 ```
                           certs/enterprise-ca.crt
@@ -48,17 +50,22 @@ no `--enterprise` argument anywhere. You drop the cert in, the rest follows.
         ┌───────────────────────────┼─────────────────────────────┐
         │                           │                             │
    host install scripts        Docker images                  host shell
-   (via _common.sh)           (via additional_contexts        (via the
-        │                       + install-ca-in-image.sh)        env file)
+   (via _common.sh,           (via additional_contexts        (via the env
+   test-all.sh, smoke.sh)     + install-ca-in-image.sh)       file: eval $(…))
         │                           │                             │
         ▼                           ▼                             ▼
- - SSL_CERT_FILE          - update-ca-certificates       - eval "$(... env)"
- - NODE_EXTRA_CA_CERTS    - cert in /etc/ssl/certs/       - exports the same
- - CURL_CA_BUNDLE         - NODE_EXTRA_CA_CERTS pinned      vars in your shell
- - GIT_SSL_CAINFO           to the merged system bundle
- - REQUESTS_CA_BUNDLE
- - AWS_CA_BUNDLE
+  source enterprise-ca.env  - update-ca-certificates       - same env vars
+  if present, else export   - cert in /etc/ssl/certs/        exported in your
+  SSL_CERT_FILE /           - NODE_EXTRA_CA_CERTS pinned     interactive shell
+  NODE_EXTRA_CA_CERTS /       to merged system bundle
+  CURL_CA_BUNDLE directly
+  from the cert path
 ```
+
+`scripts/enterprise-cert.sh enable` writes both files. If a user drops only
+`enterprise-ca.crt` into place by hand, host scripts fall back to exporting
+the common subset directly and log a one-line hint pointing at the enable
+command.
 
 ## What gets covered
 
@@ -138,8 +145,16 @@ and runtime call goes through the cert.
 or restart the shell after adding the export to your rc.
 
 **Docker build fails on `COPY --from=enterprise-ca`**
-— Your docker compose is older than v2.17 (additional_contexts unsupported).
-Upgrade Docker Desktop / `docker compose` plugin.
+— You ran plain `docker build` from a service subdirectory without supplying
+the named build context. Either use `./rebuild.sh` / `docker compose build`
+(both pre-wire `additional_contexts`), or pass it explicitly:
+`docker build --build-context enterprise-ca=../certs -t projecttemplate-frontend .`.
+The same flag is set in `.github/workflows/build-images.yml` for CI image
+publishing.
+
+If the failure is `unknown flag: --build-context`, your docker compose /
+buildx is older than v2.17. Upgrade Docker Desktop or the `docker compose`
+plugin.
 
 **`update-ca-certificates: command not found` inside an image**
 — The base image isn't Debian or Alpine. Extend

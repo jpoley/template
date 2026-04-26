@@ -4,12 +4,19 @@ Drop your enterprise root CA here as `enterprise-ca.crt` (PEM format) when this
 repo is being built or run behind a TLS-intercepting proxy (Zscaler, Netskope,
 Palo Alto Prisma Access, on-prem Squid+MITM, etc.).
 
-The presence of `certs/enterprise-ca.crt` is the **single toggle** for the whole
+A non-empty `certs/enterprise-ca.crt` is the **single toggle** for the whole
 template:
 
-- non-empty file → host install scripts, Docker builds, and runtime containers
-  all trust the cert.
+- non-empty → host install scripts, smoke/test runners, Docker builds, and
+  runtime containers all trust the cert.
 - missing or empty → everything behaves as if no proxy were in the way.
+
+`scripts/enterprise-cert.sh enable` writes `enterprise-ca.crt` *and* generates
+a richer `enterprise-ca.env` alongside it (covers `AWS_CA_BUNDLE`,
+`REQUESTS_CA_BUNDLE`, `GIT_SSL_CAINFO`, etc. — sourced when present). If you
+only drop `enterprise-ca.crt` in by hand, the host scripts fall back to
+exporting the common subset (`SSL_CERT_FILE`, `NODE_EXTRA_CA_CERTS`,
+`CURL_CA_BUNDLE`) directly. Either way the cert file is the switch.
 
 ## Quick start
 

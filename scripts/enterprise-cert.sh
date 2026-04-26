@@ -10,8 +10,8 @@
 # status          Show whether the toggle is on, fingerprint, env paths.
 # env             Print `export VAR=...` lines on stdout. Source it from your
 #                 shell:  eval "$(scripts/enterprise-cert.sh env)"
-# verify <url>    curl + openssl s_client against <url> to confirm the cert
-#                 chain validates with the bundle.
+# verify <url>    curl <url> using the configured bundle as --cacert; a 2xx
+#                 response confirms the chain validates against it.
 #
 # This script never edits .env. Compose picks the cert up at build time by
 # COPYing the certs/ directory; install scripts source certs/enterprise-ca.env
@@ -89,8 +89,10 @@ case "$cmd" in
     src="${2:-}"
     [ -n "$src" ] || fail "usage: $0 enable <path-to-pem>"
     [ -f "$src" ] || fail "no such file: $src"
+    command -v openssl >/dev/null 2>&1 \
+      || fail "openssl is required to validate the certificate. Install it (macOS: brew install openssl; Debian/Ubuntu: apt-get install openssl) and re-run."
     if ! openssl x509 -in "$src" -noout >/dev/null 2>&1; then
-      fail "$src does not parse as a PEM certificate (is it the right file?)"
+      fail "$src does not parse as a PEM certificate (is it DER? convert with: openssl x509 -inform der -in $src -out ${src%.*}.pem)"
     fi
     mkdir -p "$CERTS_DIR"
     install -m 0644 "$src" "$CERT_PATH"
