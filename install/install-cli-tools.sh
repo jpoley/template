@@ -20,6 +20,20 @@ else
   log "claude already present"
 fi
 
+# OpenAI Codex CLI. Marketplace + plugin enablement for the codex Claude Code
+# plugin are declared in .claude/settings.json — this just installs the CLI
+# binary the plugin shells out to.
+if ! have codex; then
+  if have npm; then
+    log "installing OpenAI Codex CLI (@openai/codex)"
+    npm install -g @openai/codex || log "@openai/codex install failed (non-fatal)"
+  else
+    log "npm not available — skipping OpenAI Codex CLI"
+  fi
+else
+  log "codex already present: $(codex --version 2>/dev/null | head -1)"
+fi
+
 # GitHub Copilot CLI (standalone agentic CLI, npm package @github/copilot).
 # Provides the `copilot` command. Auth happens on first run via `/login`.
 if ! have copilot; then
