@@ -1,0 +1,26 @@
+# Admin base image — slow-changing layer.
+#
+# What lives here: bun, the enterprise CA bundle, and the result of
+# `bun install` against the current package.json + bun.lock. No source code,
+# no Vite build output.
+#
+# Rebuilt only when one of these changes:
+#   - this Dockerfile.base
+#   - package.json
+#   - bun.lock (or bun.lockb)
+#   - the enterprise CA bundle in certs/
+#
+# Separate from the frontend base on purpose — admin may diverge from Vue to
+# React (see CLAUDE.md), and even today the dep sets differ
+# (@tanstack/vue-query, etc.).
+FROM oven/bun:1
+WORKDIR /app
+
+# Enterprise MITM proxy support — see docs/enterprise-proxy.md.
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+
+# Manifests only — no source.
+COPY package.json bun.lock* bun.lockb* ./
+RUN bun install --frozen-lockfile || bun install

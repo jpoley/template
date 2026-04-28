@@ -70,6 +70,12 @@ services:
       target: debug
       args:
         BUILD_CONFIG: Debug
+        # Default = the upstream SDK, so a cold `docker compose build`
+        # works without any prior setup. rebuild.sh / smoke.sh set
+        # BACKEND_BASE_IMAGE=projecttemplate/backend-base:local after
+        # building the base via scripts/build-bases.sh, which makes the
+        # actual app build a near-instant cache hit.
+        BASE_IMAGE: ${BACKEND_BASE_IMAGE:-mcr.microsoft.com/dotnet/sdk:10.0}
     container_name: projecttemplate-backend
     depends_on:
       sqlserver:
@@ -96,6 +102,8 @@ services:
       dockerfile: Dockerfile
       additional_contexts:
         enterprise-ca: ./certs
+      args:
+        BASE_IMAGE: ${FRONTEND_BASE_IMAGE:-oven/bun:1}
     container_name: projecttemplate-frontend
     depends_on:
       - backend
@@ -108,6 +116,8 @@ services:
       dockerfile: Dockerfile
       additional_contexts:
         enterprise-ca: ./certs
+      args:
+        BASE_IMAGE: ${ADMIN_BASE_IMAGE:-oven/bun:1}
     container_name: projecttemplate-admin
     depends_on:
       - backend

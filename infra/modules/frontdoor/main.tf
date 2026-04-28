@@ -3,10 +3,23 @@ variable "resource_group" { type = string }
 variable "sku" { type = string }
 variable "backend_fqdn" { type = string }
 variable "frontend_fqdn" { type = string }
-variable "admin_fqdn" { type = string }
-variable "custom_domain" { type = string }
+variable "deploy_admin" { type = bool }
+variable "admin_fqdn" {
+  type    = string
+  default = ""
+}
 variable "admin_allowed_ips" { type = list(string) }
 variable "tags" { type = map(string) }
+
+locals {
+  base_origins = {
+    frontend = var.frontend_fqdn
+    backend  = var.backend_fqdn
+  }
+  origins = var.deploy_admin ? merge(local.base_origins, { admin = var.admin_fqdn }) : local.base_origins
+
+  admin_waf_enabled = var.deploy_admin && length(var.admin_allowed_ips) > 0
+}
 
 resource "azurerm_cdn_frontdoor_profile" "main" {
   name                = "afd-${var.name_prefix}"
@@ -19,15 +32,6 @@ resource "azurerm_cdn_frontdoor_endpoint" "main" {
   name                     = "ep-${var.name_prefix}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
   tags                     = var.tags
-}
-
-# --- origin groups ------------------------------------------------------
-locals {
-  origins = {
-    frontend = var.frontend_fqdn
-    admin    = var.admin_fqdn
-    backend  = var.backend_fqdn
-  }
 }
 
 resource "azurerm_cdn_frontdoor_origin_group" "each" {
@@ -65,7 +69,7 @@ resource "azurerm_cdn_frontdoor_origin" "each" {
 
 # --- WAF (optional admin IP allowlist) ----------------------------------
 resource "azurerm_cdn_frontdoor_firewall_policy" "admin" {
-  count               = length(var.admin_allowed_ips) > 0 ? 1 : 0
+  count               = local.admin_waf_enabled ? 1 : 0
   name                = replace("waf${var.name_prefix}admin", "-", "")
   resource_group_name = var.resource_group
   sku_name            = var.sku
@@ -104,7 +108,7 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "admin" {
 }
 
 resource "azurerm_cdn_frontdoor_security_policy" "admin" {
-  count                    = length(var.admin_allowed_ips) > 0 ? 1 : 0
+  count                    = local.admin_waf_enabled ? 1 : 0
   name                     = "secp-${var.name_prefix}-admin"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
 
@@ -136,6 +140,7 @@ resource "azurerm_cdn_frontdoor_route" "backend" {
 }
 
 resource "azurerm_cdn_frontdoor_route" "admin" {
+  count                         = var.deploy_admin ? 1 : 0
   name                          = "r-admin"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.main.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.each["admin"].id
@@ -163,7 +168,7 @@ output "frontend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}"
 }
 output "admin_url" {
-  value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/admin"
+  value = var.deploy_admin ? "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/admin" : ""
 }
 output "backend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/api"

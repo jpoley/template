@@ -36,6 +36,7 @@ fi
 PROVIDER="postgres"
 KEEP_UP=0
 BUILD_ARGS=(--build)
+SKIP_BASES=0
 BACKEND_URL="http://localhost:6180"
 FRONTEND_URL="http://localhost:6173"
 ADMIN_URL="http://localhost:6174"
@@ -47,6 +48,7 @@ while [ $# -gt 0 ]; do
     --provider) PROVIDER="$2"; shift ;;
     --keep-up)  KEEP_UP=1 ;;
     --no-build) BUILD_ARGS=() ;;
+    --skip-bases) SKIP_BASES=1 ;;
     -h|--help)  sed -n '2,17p' "$0"; exit 0 ;;
     *) echo "smoke: unknown arg '$1'" >&2; exit 2 ;;
   esac
@@ -104,6 +106,22 @@ teardown() {
   exit $rc
 }
 trap teardown EXIT
+
+# ---------- bases ----------
+# Build the slow-changing per-service bases first so the app build is a
+# cache hit. build-bases.sh is content-addressed: skips per-service when
+# nothing relevant changed. Cold first run ~2-3 min; subsequent runs no-op.
+# Pass --skip-bases to bypass (forces upstream SDK/bun pulls in the app build).
+if [ "$SKIP_BASES" -eq 0 ] && [ ${#BUILD_ARGS[@]} -gt 0 ]; then
+  step "Building base images (scripts/build-bases.sh)"
+  if scripts/build-bases.sh; then
+    docker image inspect projecttemplate/backend-base:local  >/dev/null 2>&1 && export BACKEND_BASE_IMAGE=projecttemplate/backend-base:local
+    docker image inspect projecttemplate/frontend-base:local >/dev/null 2>&1 && export FRONTEND_BASE_IMAGE=projecttemplate/frontend-base:local
+    docker image inspect projecttemplate/admin-base:local    >/dev/null 2>&1 && export ADMIN_BASE_IMAGE=projecttemplate/admin-base:local
+  else
+    echo "    base build failed — falling back to upstream BASE_IMAGE" >&2
+  fi
+fi
 
 # ---------- bring up ----------
 step "docker compose up -d ${BUILD_ARGS[*]:-} (profile=$PROVIDER)"

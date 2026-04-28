@@ -11,6 +11,11 @@ permissions:
 
 env:
   REGISTRY: ${{ vars.ACR_LOGIN_SERVER }}
+  # BASE_IMAGE_PREFIX (repo variable) selects the base-image source for
+  # this build. Set to e.g. ghcr.io/<owner>/template-base to consume the
+  # bases published by base-images.yml. When unset, app builds use the
+  # upstream SDK/bun (slower; full restore/install on every build).
+  BASE_IMAGE_PREFIX: ${{ vars.BASE_IMAGE_PREFIX }}
 
 jobs:
   build:
@@ -29,6 +34,20 @@ jobs:
       - name: ACR login
         run: az acr login --name "${{ vars.ACR_NAME }}"
       - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve BASE_IMAGE
+        id: base
+        run: |
+          set -euo pipefail
+          if [[ -n "${BASE_IMAGE_PREFIX:-}" ]]; then
+            echo "image=${BASE_IMAGE_PREFIX}/${{ matrix.service }}:edge" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ matrix.service }}" in
+              backend) echo "image=mcr.microsoft.com/dotnet/sdk:10.0" >> "$GITHUB_OUTPUT" ;;
+              *)       echo "image=oven/bun:1"                        >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
       - uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
@@ -38,6 +57,8 @@ jobs:
           # docs/enterprise-proxy.md.
           build-contexts: |
             enterprise-ca=./certs
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
           push: true
           tags: |
             ${{ env.REGISTRY }}/projecttemplate/${{ matrix.service }}:${{ github.sha }}

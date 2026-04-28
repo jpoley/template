@@ -1,0 +1,39 @@
+# Backend base image — slow-changing layer.
+#
+# What lives here: the .NET SDK, enterprise CA bundle, and the result of
+# `dotnet restore` against the current project files. No source code, no app
+# build artifacts.
+#
+# Rebuilt only when one of these changes:
+#   - this Dockerfile.base
+#   - global.json
+#   - Directory.Build.props
+#   - any *.csproj in src/ or tests/
+#   - the enterprise CA bundle in certs/
+#
+# Result image is tagged (locally) projecttemplate/backend-base:local and
+# (in cloud) <acr>/template-base/backend:<sha or semver>. The app's Dockerfile
+# starts with FROM ${BASE_IMAGE} and treats this layer as a hot cache for
+# `dotnet restore`.
+FROM mcr.microsoft.com/dotnet/sdk:10.0
+WORKDIR /src
+
+# Enterprise MITM proxy support — see docs/enterprise-proxy.md. The named
+# `enterprise-ca` build context is supplied by docker-compose / az acr build /
+# the build-bases.sh helper. install-ca-in-image.sh no-ops when no real cert
+# is staged. Doing this before `dotnet restore` means NuGet sees the
+# enterprise root.
+COPY --from=enterprise-ca . /tmp/enterprise-ca/
+RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
+
+# Project manifests only — no source. dotnet restore caches every package
+# referenced by these files into ~/.nuget/packages, so the eventual app build
+# (which runs another `dotnet restore` over the same set) is a no-op.
+COPY global.json Directory.Build.props ./
+COPY Backend.sln ./
+COPY src/ProjectTemplate.Domain/ProjectTemplate.Domain.csproj           src/ProjectTemplate.Domain/
+COPY src/ProjectTemplate.Infrastructure/ProjectTemplate.Infrastructure.csproj src/ProjectTemplate.Infrastructure/
+COPY src/ProjectTemplate.Api/ProjectTemplate.Api.csproj                 src/ProjectTemplate.Api/
+COPY tests/ProjectTemplate.Api.Tests/ProjectTemplate.Api.Tests.csproj   tests/ProjectTemplate.Api.Tests/
+
+RUN dotnet restore src/ProjectTemplate.Api/ProjectTemplate.Api.csproj

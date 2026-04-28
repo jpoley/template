@@ -4,13 +4,25 @@ variable "resource_group" { type = string }
 variable "log_analytics_workspace_id" { type = string }
 variable "acr_login_server" { type = string }
 variable "acr_id" { type = string }
-variable "postgres_connection_string" {
-  type      = string
-  sensitive = true
+
+variable "db_provider" {
+  description = "Backend Database:Provider value (Postgres | SqlServer | InMemory)."
+  type        = string
 }
+variable "db_connection_env_name" {
+  description = "Env var name the backend reads (e.g. ConnectionStrings__Postgres)."
+  type        = string
+}
+variable "db_connection_string" {
+  description = "Connection string. Empty when db_provider = InMemory."
+  type        = string
+  sensitive   = true
+}
+
 variable "backend_image" { type = string }
 variable "frontend_image" { type = string }
 variable "admin_image" { type = string }
+variable "deploy_admin" { type = bool }
 variable "backend_min_replicas" { type = number }
 variable "backend_max_replicas" { type = number }
 variable "app_insights_connection_string" {
@@ -18,6 +30,10 @@ variable "app_insights_connection_string" {
   sensitive = true
 }
 variable "tags" { type = map(string) }
+
+locals {
+  has_db = length(var.db_connection_string) > 0
+}
 
 resource "azurerm_user_assigned_identity" "apps" {
   name                = "id-${var.name_prefix}-apps"
@@ -69,9 +85,12 @@ resource "azurerm_container_app" "backend" {
     }
   }
 
-  secret {
-    name  = "postgres-connection-string"
-    value = var.postgres_connection_string
+  dynamic "secret" {
+    for_each = local.has_db ? [1] : []
+    content {
+      name  = "db-connection-string"
+      value = var.db_connection_string
+    }
   }
 
   template {
@@ -90,11 +109,14 @@ resource "azurerm_container_app" "backend" {
       }
       env {
         name  = "Database__Provider"
-        value = "Postgres"
+        value = var.db_provider
       }
-      env {
-        name        = "ConnectionStrings__Postgres"
-        secret_name = "postgres-connection-string"
+      dynamic "env" {
+        for_each = local.has_db ? [1] : []
+        content {
+          name        = var.db_connection_env_name
+          secret_name = "db-connection-string"
+        }
       }
       env {
         name  = "AZURE_CLIENT_ID"
@@ -150,6 +172,7 @@ resource "azurerm_container_app" "frontend" {
 
 # --- admin --------------------------------------------------------------
 resource "azurerm_container_app" "admin" {
+  count                        = var.deploy_admin ? 1 : 0
   name                         = "ca-${var.name_prefix}-admin"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.resource_group
@@ -190,4 +213,6 @@ resource "azurerm_container_app" "admin" {
 
 output "backend_fqdn" { value = azurerm_container_app.backend.latest_revision_fqdn }
 output "frontend_fqdn" { value = azurerm_container_app.frontend.latest_revision_fqdn }
-output "admin_fqdn" { value = azurerm_container_app.admin.latest_revision_fqdn }
+output "admin_fqdn" {
+  value = var.deploy_admin ? azurerm_container_app.admin[0].latest_revision_fqdn : ""
+}

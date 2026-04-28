@@ -1,15 +1,21 @@
 # --- build stage --------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# BASE_IMAGE defaults to the upstream SDK so this Dockerfile builds standalone
+# (slow path: full enterprise CA install + dotnet restore). When the build
+# arg points at a prebuilt base from Dockerfile.base — locally
+# `projecttemplate/backend-base:local`, in cloud `<acr>/template-base/backend:<ver>` —
+# both of those steps become near-instant cache hits.
+ARG BASE_IMAGE=mcr.microsoft.com/dotnet/sdk:10.0
+FROM ${BASE_IMAGE} AS build
 ARG BUILD_CONFIG=Release
 WORKDIR /src
 
-# Enterprise MITM proxy support — see docs/enterprise-proxy.md. The named
-# `enterprise-ca` build context is supplied by docker-compose.yml; the install
-# script no-ops when no cert is staged. Doing this before `dotnet restore`
-# means NuGet sees the enterprise root.
+# Enterprise CA install — no-op if the base already installed it.
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
 RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
+# Manifests — copied again so a standalone build (no prebuilt base) still
+# works. With a prebuilt base these files are byte-identical to what's
+# already there, so the layer cache hits instantly.
 COPY global.json Directory.Build.props ./
 COPY Backend.sln ./
 COPY src/ProjectTemplate.Domain/ProjectTemplate.Domain.csproj src/ProjectTemplate.Domain/
@@ -17,6 +23,7 @@ COPY src/ProjectTemplate.Infrastructure/ProjectTemplate.Infrastructure.csproj sr
 COPY src/ProjectTemplate.Api/ProjectTemplate.Api.csproj src/ProjectTemplate.Api/
 COPY tests/ProjectTemplate.Api.Tests/ProjectTemplate.Api.Tests.csproj tests/ProjectTemplate.Api.Tests/
 
+# When BASE_IMAGE has a populated NuGet cache, this is a fast no-op.
 RUN dotnet restore src/ProjectTemplate.Api/ProjectTemplate.Api.csproj
 
 COPY . .

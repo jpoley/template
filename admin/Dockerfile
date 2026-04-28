@@ -1,12 +1,17 @@
-FROM oven/bun:1 AS build
+# BASE_IMAGE defaults to the upstream bun image so this Dockerfile builds
+# standalone. When pointed at a prebuilt base built from Dockerfile.base
+# (locally `projecttemplate/admin-base:local`, in cloud
+# `<acr>/template-base/admin:<ver>`), bun install is a no-op cache hit.
+ARG BASE_IMAGE=oven/bun:1
+FROM ${BASE_IMAGE} AS build
 WORKDIR /app
 
-# Enterprise MITM proxy support — see docs/enterprise-proxy.md.
+# Enterprise CA install — no-op if the base already installed it.
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
 RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
-COPY package.json bun.lockb* ./
+COPY package.json bun.lock* bun.lockb* ./
 RUN bun install --frozen-lockfile || bun install
 
 COPY . .

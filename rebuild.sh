@@ -53,12 +53,14 @@ PROVIDER=""
 FRESH=0
 FULL=0
 ONLY=""
+SKIP_BASES=0
 while [ $# -gt 0 ]; do
   case "$1" in
     sqlserver|postgres) PROVIDER="$1" ;;
     --fresh)                   FRESH=1 ;;
     --full)                    FULL=1 ;;
     --only)                    ONLY="$2"; shift ;;
+    --skip-bases)              SKIP_BASES=1 ;;
     -h|--help)                 sed -n '2,20p' "$0"; exit 0 ;;
     *) echo "error: unknown arg '$1'" >&2; exit 2 ;;
   esac
@@ -147,6 +149,24 @@ else
     fi
     sleep 3
   done
+fi
+
+# -----------------------------------------------------------------------------
+# Base images (slow-changing layer: SDK + restored deps + enterprise CA)
+# build-bases.sh skips per-service when nothing relevant changed, so this is
+# a fast no-op on the inner loop. Each base it builds gets exported as
+# {SERVICE}_BASE_IMAGE so docker-compose's BASE_IMAGE arg picks it up — that
+# turns the app build's `dotnet restore` / `bun install` into a cache hit.
+# Pass --skip-bases to opt out (build straight from upstream).
+# -----------------------------------------------------------------------------
+if [ "$SKIP_BASES" -eq 0 ]; then
+  if scripts/build-bases.sh; then
+    docker image inspect projecttemplate/backend-base:local  >/dev/null 2>&1 && export BACKEND_BASE_IMAGE=projecttemplate/backend-base:local
+    docker image inspect projecttemplate/frontend-base:local >/dev/null 2>&1 && export FRONTEND_BASE_IMAGE=projecttemplate/frontend-base:local
+    docker image inspect projecttemplate/admin-base:local    >/dev/null 2>&1 && export ADMIN_BASE_IMAGE=projecttemplate/admin-base:local
+  else
+    echo "==> base build failed; continuing with upstream BASE_IMAGE fallback" >&2
+  fi
 fi
 
 # -----------------------------------------------------------------------------

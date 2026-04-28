@@ -8,6 +8,39 @@ locals {
     },
     var.tags,
   )
+
+  needs_db_password = var.db_provider != "none"
+
+  db_connection_string = (
+    var.db_provider == "postgres" ? try(module.postgres[0].connection_string, "") :
+    var.db_provider == "sqlserver" ? try(module.mssql[0].connection_string, "") :
+    ""
+  )
+
+  # Mapped to backend's Database:Provider config key.
+  backend_db_provider = (
+    var.db_provider == "postgres" ? "Postgres" :
+    var.db_provider == "sqlserver" ? "SqlServer" :
+    "InMemory"
+  )
+
+  # Connection-string env var name expected by the backend.
+  backend_db_connection_env = (
+    var.db_provider == "postgres" ? "ConnectionStrings__Postgres" :
+    var.db_provider == "sqlserver" ? "ConnectionStrings__SqlServer" :
+    "ConnectionStrings__Unused"
+  )
+}
+
+# Fail fast if a managed DB was requested without a password.
+resource "terraform_data" "validate_db_password" {
+  count = local.needs_db_password ? 1 : 0
+  lifecycle {
+    precondition {
+      condition     = length(var.db_administrator_password) > 0
+      error_message = "db_administrator_password must be set when db_provider != \"none\". Supply TF_VAR_db_administrator_password or use deploy.sh."
+    }
+  }
 }
 
 resource "random_string" "suffix" {
@@ -50,6 +83,7 @@ module "registry" {
 
 module "postgres" {
   source = "./modules/postgres"
+  count  = var.db_provider == "postgres" ? 1 : 0
 
   name_prefix            = local.name_prefix
   suffix                 = random_string.suffix.result
@@ -58,8 +92,23 @@ module "postgres" {
   sku_name               = var.postgres_sku_name
   storage_mb             = var.postgres_storage_mb
   postgres_version       = var.postgres_version
-  administrator_login    = var.postgres_administrator_login
-  administrator_password = var.postgres_administrator_password
+  administrator_login    = var.db_administrator_login
+  administrator_password = var.db_administrator_password
+  tags                   = local.base_tags
+}
+
+module "mssql" {
+  source = "./modules/mssql"
+  count  = var.db_provider == "sqlserver" ? 1 : 0
+
+  name_prefix            = local.name_prefix
+  suffix                 = random_string.suffix.result
+  location               = azurerm_resource_group.main.location
+  resource_group         = azurerm_resource_group.main.name
+  administrator_login    = var.db_administrator_login
+  administrator_password = var.db_administrator_password
+  database_sku_name      = var.sqlserver_database_sku
+  max_size_gb            = var.sqlserver_max_size_gb
   tags                   = local.base_tags
 }
 
@@ -73,11 +122,14 @@ module "container_apps" {
   acr_login_server           = module.registry.login_server
   acr_id                     = module.registry.id
 
-  postgres_connection_string = module.postgres.connection_string
+  db_provider            = local.backend_db_provider
+  db_connection_env_name = local.backend_db_connection_env
+  db_connection_string   = local.db_connection_string
 
   backend_image        = var.backend_image
   frontend_image       = var.frontend_image
   admin_image          = var.admin_image
+  deploy_admin         = var.deploy_admin
   backend_min_replicas = var.backend_min_replicas
   backend_max_replicas = var.backend_max_replicas
 
@@ -88,14 +140,15 @@ module "container_apps" {
 
 module "frontdoor" {
   source = "./modules/frontdoor"
+  count  = var.deploy_frontdoor ? 1 : 0
 
   name_prefix       = local.name_prefix
   resource_group    = azurerm_resource_group.main.name
   sku               = var.frontdoor_sku
   backend_fqdn      = module.container_apps.backend_fqdn
   frontend_fqdn     = module.container_apps.frontend_fqdn
-  admin_fqdn        = module.container_apps.admin_fqdn
-  custom_domain     = var.custom_domain
+  deploy_admin      = var.deploy_admin
+  admin_fqdn        = var.deploy_admin ? module.container_apps.admin_fqdn : ""
   admin_allowed_ips = var.admin_allowed_ips
   tags              = local.base_tags
 }

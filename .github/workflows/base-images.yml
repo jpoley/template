@@ -1,0 +1,118 @@
+name: base-images
+
+# Build and publish the per-service base images (slow-changing layer: SDK +
+# restored deps + enterprise CA). Apps `FROM` these via the BASE_IMAGE
+# build-arg in their Dockerfiles.
+#
+# This workflow is OPTIONAL — the template ships defaulting to "build the
+# bases yourself in your own ACR" via deploy.sh, with no external base
+# registry required. Use this workflow when you want to publish bases to a
+# registry you control, then point deploy.sh at it with --prebuilt-base.
+#
+# Defaults to publishing to GHCR under the template repo's owner because
+# that needs no extra setup. Edit the REGISTRY / login step / repo name
+# below to publish anywhere (your ACR, Artifact Registry, internal
+# registry, …) — there is no "official" template-base location.
+#
+# RULE: never rebuild on a schedule. Bases rebuild only when their inputs
+# actually change.
+#
+# Triggers:
+#   - push to main touching Dockerfile.base or any dependency manifest
+#   - manual dispatch (use this for SemVer releases — pass `version: 1.2.0`)
+#
+# Tagging:
+#   - every build:                    :<sha>, :edge
+#   - manual dispatch with version X: + :X, :X.MAJ.MIN, :X.MAJ, :latest
+#
+# Consume the bases by passing the registry prefix to deploy.sh:
+#   ./deploy.sh --apply --prebuilt-base <your-registry>/template-base
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/Dockerfile.base'
+      - 'backend/global.json'
+      - 'backend/Directory.Build.props'
+      - 'backend/Backend.sln'
+      - 'backend/src/**/*.csproj'
+      - 'backend/tests/**/*.csproj'
+      - 'frontend/Dockerfile.base'
+      - 'frontend/package.json'
+      - 'frontend/bun.lock'
+      - 'frontend/bun.lockb'
+      - 'admin/Dockerfile.base'
+      - 'admin/package.json'
+      - 'admin/bun.lock'
+      - 'admin/bun.lockb'
+      - 'certs/enterprise-ca.crt'
+      - '.github/workflows/base-images.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'SemVer release (e.g. 1.2.0). Leave blank for sha-only build.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write   # push to GHCR
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_OWNER: ${{ github.repository_owner }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [backend, frontend, admin]
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: GHCR login
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: |
+          set -euo pipefail
+          base="${REGISTRY}/${IMAGE_OWNER,,}/template-base/${{ matrix.service }}"
+          tags=("${base}:${GITHUB_SHA::12}" "${base}:edge")
+          version='${{ github.event.inputs.version }}'
+          if [[ -n "$version" ]]; then
+            if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "version must be MAJOR.MINOR.PATCH" >&2; exit 1
+            fi
+            major="${version%%.*}"
+            minor_patch="${version#*.}"
+            minor="${minor_patch%%.*}"
+            tags+=("${base}:${version}" "${base}:${major}.${minor}" "${base}:${major}" "${base}:latest")
+          fi
+          # Comma-joined for build-push-action's `tags:` input.
+          IFS=,
+          echo "tags=${tags[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile.base
+          # The Dockerfile.base copies the enterprise CA from this named
+          # context. CI ships an empty cert dir; the in-image installer no-ops.
+          build-contexts: |
+            enterprise-ca=./certs
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha,scope=base-${{ matrix.service }}
+          cache-to:   type=gha,scope=base-${{ matrix.service }},mode=max
+          provenance: true
+          sbom: true
