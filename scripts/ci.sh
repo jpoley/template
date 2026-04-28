@@ -6,7 +6,7 @@
 #   scripts/ci.sh --event pull_request     # use a different event (default: push)
 #   scripts/ci.sh --list                   # list what act would run, don't execute
 #   scripts/ci.sh --all                    # include build-images.yml (needs registry secrets)
-#   ACT_WORKFLOWS='frontend.yml,admin.yml' scripts/ci.sh
+#   ACT_WORKFLOWS='frontend.yml,internal.yml' scripts/ci.sh
 #   scripts/ci.sh -- -j backend-test       # pass args after -- straight through to act
 #
 # Why this exists:
@@ -67,7 +67,7 @@ fi
 # -----------------------------------------------------------------------------
 # Default subset: everything that runs on `push` without registry secrets.
 # Override with ACT_WORKFLOWS='a.yml,b.yml' or --all.
-DEFAULT_SAFE=(backend.yml frontend.yml admin.yml e2e.yml infra.yml)
+DEFAULT_SAFE=(backend.yml frontend.yml internal.yml e2e.yml infra.yml)
 UNSAFE=(build-images.yml)
 
 if [ -n "${ACT_WORKFLOWS:-}" ]; then

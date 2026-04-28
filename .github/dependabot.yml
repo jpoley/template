@@ -5,7 +5,7 @@ updates:
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
   - package-ecosystem: npm
-    directory: /admin
+    directory: /internal
     schedule: { interval: weekly }
     open-pull-requests-limit: 5
   - package-ecosystem: nuget
@@ -22,7 +22,7 @@ updates:
     directory: /frontend
     schedule: { interval: weekly }
   - package-ecosystem: docker
-    directory: /admin
+    directory: /internal
     schedule: { interval: weekly }
   - package-ecosystem: docker
     directory: /backend

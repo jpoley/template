@@ -5,7 +5,7 @@
 ## Scope
 
 - [ ] frontend
-- [ ] admin
+- [ ] internal
 - [ ] backend
 - [ ] infra
 - [ ] docs
@@ -17,7 +17,7 @@
 
 ## Validation
 
-- [ ] `bun run typecheck` / `bun run test` pass (if frontend/admin touched)
+- [ ] `bun run typecheck` / `bun run test` pass (if frontend/internal touched)
 - [ ] `dotnet build /warnaserror` and `dotnet test` pass (if backend touched)
 - [ ] `terraform fmt -check` and `terraform validate` pass (if infra touched)
 - [ ] `docker compose up --build` boots cleanly (if Dockerfiles or compose changed)

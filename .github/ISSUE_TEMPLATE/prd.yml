@@ -24,7 +24,6 @@ body:
       options:
         - frontend
         - internal
-        - admin
         - backend
         - infra
         - docs
@@ -51,7 +50,7 @@ body:
       placeholder: |
         - `POST /api/admin/users/bulk-disable` accepts `multipart/form-data` with `file` (CSV, columns: `email`).
         - Response: `200 { "disabled": number, "skipped": [{ "email": string, "reason": string }] }`.
-        - Admin UI: new "Bulk disable" button on `/admin/users` opening a shadcn-vue `Dialog` with file picker + dry-run toggle.
+        - Internal UI: new "Bulk disable" button on `/admin/users` opening a shadcn `Dialog` with file picker + dry-run toggle.
         - New file: `backend/src/ProjectTemplate.Api/Endpoints/UsersBulkDisable.cs`.
     validations:
       required: true
@@ -101,9 +100,9 @@ body:
         - [ ] **Criterion:** Authz — non-admin caller gets `403`.
               **Verification:** xUnit integration test in `backend/tests/` using `WebApplicationFactory<Program>` with a non-admin token.
         - [ ] **Criterion:** UI — new dialog opens, accepts a file, and shows the result summary.
-              **Verification:** vitest component test in `admin/src/__tests__/`; manual check via `bun run dev` documented in PR.
+              **Verification:** vitest component test in `internal/src/__tests__/`; manual check via `bun run dev` documented in PR.
         - [ ] **Criterion:** Whole suite green.
-              **Verification:** `scripts/test-all.sh` exits 0 (backend tests + frontend/admin typecheck/lint/vitest/build + terraform + closed-loop smoke).
+              **Verification:** `scripts/test-all.sh` exits 0 (backend tests + frontend/internal typecheck/lint/vitest/build + terraform + closed-loop smoke).
     validations:
       required: true
   - type: textarea

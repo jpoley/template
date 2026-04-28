@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install per-project dependencies: bun install in frontend+admin, dotnet restore,
+# Install per-project dependencies: bun install in frontend+internal, dotnet restore,
 # and terraform init -backend=false. Safe to re-run.
 set -euo pipefail
 
@@ -13,8 +13,8 @@ export DOTNET_ROOT="$HOME/.dotnet"
 log "deps: frontend"
 ( cd "$ROOT/frontend" && bun install )
 
-log "deps: admin"
-( cd "$ROOT/admin" && bun install )
+log "deps: internal"
+( cd "$ROOT/internal" && bun install )
 
 log "deps: backend"
 ( cd "$ROOT/backend" && dotnet restore Backend.sln )

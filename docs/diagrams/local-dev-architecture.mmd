@@ -12,7 +12,7 @@ flowchart TB
     subgraph apps["app services (always on)"]
         direction LR
         frontend["<b>frontend</b><br/>Vue 3 + PWA<br/>nginx : 80<br/>→ host 6173"]
-        admin["<b>admin</b><br/>Vue 3<br/>nginx : 80<br/>→ host 6174"]
+        internal["<b>internal</b><br/>Next.js 15<br/>node : 3000<br/>→ host 6174"]
         backend["<b>backend</b><br/>.NET 10 API<br/>Kestrel : 8080<br/>→ host 6180"]
     end
 
@@ -23,9 +23,9 @@ flowchart TB
     end
 
     browser -->|":6173"| frontend
-    browser -->|":6174"| admin
+    browser -->|":6174"| internal
     frontend -->|"/api/*<br/>nginx proxy_pass"| backend
-    admin    -->|"/api/*<br/>nginx proxy_pass"| backend
+    internal -->|"/api/* (NEXT_PUBLIC_API_BASE)"| backend
 
     backend -.->|"selected by<br/>Database:Provider<br/>(default)"| postgres
     backend -.->|"selected by<br/>Database:Provider"| sqlserver
@@ -33,6 +33,6 @@ flowchart TB
     classDef appBox fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
     classDef dbBox  fill:#fff3e0,stroke:#ef6c00,color:#e65100
     classDef ext    fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
-    class frontend,admin,backend appBox
+    class frontend,internal,backend appBox
     class postgres,sqlserver dbBox
     class browser ext

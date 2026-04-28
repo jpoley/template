@@ -34,17 +34,17 @@ infra/
     ├── registry/             # Azure Container Registry
     ├── postgres/             # PostgreSQL Flexible Server + database + firewall rule
     ├── container_apps/       # Container Apps env + 3 apps + managed identity
-    └── frontdoor/            # Front Door profile + routes + optional admin WAF
+    └── frontdoor/            # Front Door profile + routes + optional internal WAF
 ```
 
 ## Image pipeline
 
 Terraform references image tags as variables (`backend_image`, etc.). CI pushes images to ACR *before* `terraform apply`:
 
-1. GitHub Actions builds frontend/backend/admin images.
+1. GitHub Actions builds frontend/backend/internal images.
 2. Tags with `${{ github.sha }}`.
 3. Pushes to `${acr_login_server}/projecttemplate/<service>:<sha>`.
-4. Calls `terraform apply -var backend_image=... -var frontend_image=... -var admin_image=...`.
+4. Calls `terraform apply -var backend_image=... -var frontend_image=... -var internal_image=...`.
 
 ## Notes
 

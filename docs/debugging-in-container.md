@@ -57,7 +57,7 @@ If VS Code asks you to "pick a process", type `dotnet` and press Enter.
 
 ### Step 4. Trigger the code
 
-Hit the endpoint that runs through your breakpoint. The easiest way is the admin UI or a curl:
+Hit the endpoint that runs through your breakpoint. The easiest way is the internal UI or a curl:
 
 ```bash
 curl -X POST http://localhost:6180/api/items \
@@ -130,7 +130,7 @@ VS Code's `sourceFileMap` in `.vscode/launch.json` maps the container's `/src` p
 
 That's normal. `vsdbg` pauses the process on every step / variable eval. For anything perf-sensitive (load test, profiling), detach first.
 
-### "Can I debug the frontend or admin UI the same way?"
+### "Can I debug the frontend or internal UI the same way?"
 
 Different story — they run inside the browser, not the container. Use Chrome DevTools (or VS Code's JavaScript debugger against `http://localhost:6173`). This guide is about the .NET backend only.
 
