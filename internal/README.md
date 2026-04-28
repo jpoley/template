@@ -22,8 +22,18 @@ bun run lint        # next lint
 bun run typecheck   # tsc --noEmit
 bun run test        # vitest (RTL smoke)
 bun run build       # next build → .next/standalone/
-bun run start       # node .next/standalone/server.js (PORT=6174 default)
+bun run start       # node .next/standalone/server.js (binds PORT, default 3000)
 ```
+
+The standalone server reads `PORT` from the environment (defaults to **3000**,
+not 6174). To match the dev port locally:
+
+```bash
+PORT=6174 bun run start
+```
+
+In Docker / Compose / Container Apps the `PORT=3000` env is set explicitly and
+the host port is mapped on top (compose maps host `6174` → container `3000`).
 
 The Dockerfile is a three-stage build: `deps` (Bun install) → `builder` (Bun
 runs `next build`) → `runner` (Node 22 slim, executes `server.js`).

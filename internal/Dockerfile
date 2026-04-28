@@ -41,5 +41,8 @@ COPY --from=builder /app/public ./public
 
 USER node
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s CMD wget -qO- http://127.0.0.1:3000/ || exit 1
+# node:22 ships fetch built-in; node:22-bookworm-slim has no wget/curl. Use a
+# Node-based HTTP probe so the healthcheck doesn't depend on extra packages.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "server.js"]

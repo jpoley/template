@@ -2,7 +2,9 @@ export function apiBase(): string {
   if (typeof window === 'undefined') {
     return process.env.API_BASE_INTERNAL || 'http://backend:8080'
   }
-  return process.env.NEXT_PUBLIC_API_BASE || ''
+  // Browser stays same-origin so Next.js's /api/:path* rewrite proxies to the
+  // backend. Hitting the backend directly would trip CORS in dev.
+  return ''
 }
 
 function url(path: string): string {

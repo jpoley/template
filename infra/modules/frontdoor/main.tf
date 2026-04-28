@@ -135,11 +135,36 @@ resource "azurerm_cdn_frontdoor_route" "backend" {
   link_to_default_domain        = true
 }
 
+# The Next.js app runs without a basePath, so Front Door must strip the
+# /internal prefix before forwarding (otherwise /internal/items would 404 at
+# the origin).
+resource "azurerm_cdn_frontdoor_rule_set" "internal" {
+  name                     = "internal"
+  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
+}
+
+resource "azurerm_cdn_frontdoor_rule" "internal_strip_prefix" {
+  depends_on                = [azurerm_cdn_frontdoor_origin_group.each, azurerm_cdn_frontdoor_origin.each]
+  name                      = "stripinternalprefix"
+  cdn_frontdoor_rule_set_id = azurerm_cdn_frontdoor_rule_set.internal.id
+  order                     = 1
+  behavior_on_match         = "Continue"
+
+  actions {
+    url_rewrite_action {
+      source_pattern          = "/internal"
+      destination             = "/"
+      preserve_unmatched_path = true
+    }
+  }
+}
+
 resource "azurerm_cdn_frontdoor_route" "internal" {
   name                          = "r-internal"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.main.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.each["internal"].id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.each["internal"].id]
+  cdn_frontdoor_rule_set_ids    = [azurerm_cdn_frontdoor_rule_set.internal.id]
   supported_protocols           = ["Http", "Https"]
   patterns_to_match             = ["/internal/*"]
   forwarding_protocol           = "HttpsOnly"
