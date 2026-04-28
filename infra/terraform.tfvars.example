@@ -7,7 +7,7 @@ location     = "eastus2"
 # Container images. CI pushes these before `terraform apply`.
 backend_image  = "<acr-name>.azurecr.io/projecttemplate/backend:latest"
 frontend_image = "<acr-name>.azurecr.io/projecttemplate/frontend:latest"
-admin_image    = "<acr-name>.azurecr.io/projecttemplate/admin:latest"
+internal_image = "<acr-name>.azurecr.io/projecttemplate/internal:latest"
 
 # PostgreSQL (Azure Database for PostgreSQL Flexible Server)
 postgres_sku_name            = "B_Standard_B1ms"
@@ -29,8 +29,8 @@ log_analytics_retention_days = 30
 frontdoor_sku = "Standard_AzureFrontDoor"
 custom_domain = ""
 
-# Lock down admin UI to your office IPs
-admin_allowed_ips = []
+# Lock down internal UI to your office IPs
+internal_allowed_ips = []
 
 tags = {
   owner = "platform-team"

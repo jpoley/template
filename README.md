@@ -4,13 +4,13 @@ A GitHub template for starting full-stack projects with:
 
 - **frontend/** — Vue 3 + TypeScript + Bun, shadcn-vue, service worker / PWA, containerized.
 - **backend/** — C# .NET 10 Web API backed by PostgreSQL (EF Core + Npgsql), containerized.
-- **admin/** — Vue 3 + TypeScript admin UI for viewing and editing DB records.
+- **internal/** — Next.js 15 + React 19 + TypeScript + shadcn (React) for internal staff tooling. Bun installs locally; Node 22 runs the standalone production bundle.
 - **docs/** — Requirements and design documents.
 - **infra/** — Terraform for Azure (Container Apps, Azure Database for PostgreSQL, Front Door). All environment values are TF variables.
 - **e2e/** — Playwright end-to-end browser tests that boot the full stack.
 - **install/** — Reproducible bootstrap scripts (Bun, .NET 10, Terraform, backlog.md, Playwright, deps).
 - **backlog/** — Real [backlog.md](https://github.com/MrLesk/Backlog.md) project for tasks, decisions, docs.
-- **docker-compose.yml** — Local dev stack (frontend + backend + admin + PostgreSQL).
+- **docker-compose.yml** — Local dev stack (frontend + backend + internal + PostgreSQL).
 - **.devcontainer/** — Ready-to-use devcontainer with Claude Code, GitHub Copilot CLI, and `gh`.
 - **.claude/**, **.github/** — Agent configuration, CI, issue and PR templates.
 - **.logs/** — Append-only JSONL per session of agent decisions and references.
@@ -42,13 +42,13 @@ Then verify:
 # Frontend
 ( cd frontend && bun run typecheck && bun run build )
 
-# Admin
-( cd admin && bun run typecheck && bun run build )
+# Internal
+( cd internal && bun run lint && bun run typecheck && bun run test && bun run build )
 
 # Infra
 ( cd infra && terraform fmt -check -recursive && terraform validate )
 
-# End-to-end (boots backend + frontend + admin, drives real Chromium)
+# End-to-end (boots backend + frontend + internal, drives real Chromium)
 ./e2e/run-playwright.sh test
 ```
 
@@ -76,7 +76,7 @@ Two options.
 
 # In separate shells:
 ( cd frontend && bunx vite --port 6173 )
-( cd admin    && bunx vite --port 6174 )
+( cd internal && bun run dev -- --port 6174 )
 ```
 
 ![Local dev architecture](docs/diagrams/local-dev-architecture.png)
@@ -96,7 +96,7 @@ Both provider implementations are built and ready; only the chosen DB container 
 | Service    | URL                         |
 | ---------- | --------------------------- |
 | Frontend   | http://localhost:6173       |
-| Admin      | http://localhost:6174       |
+| Internal   | http://localhost:6174       |
 | Backend    | http://localhost:6180       |
 | Postgres   | `psql -h localhost -p 6432 -U postgres` (password from `.env` → `$POSTGRES_PASSWORD`) |
 | SQL Server | `sqlcmd -S localhost,6433 -U sa -P 'LocalDev!1234'` (optional) |
@@ -135,7 +135,7 @@ These are pre-seeded as tasks — run `backlog task list`.
 ├── .devcontainer/      # Devcontainer definition
 ├── .github/            # Actions, issue/PR templates, copilot-instructions.md
 ├── .logs/              # JSONL per-session agent decision/reference logs
-├── admin/              # Admin UI (Vue + TS + Bun + shadcn-vue)
+├── internal/           # Internal staff UI (Next.js 15 + React 19 + Tailwind 4 + shadcn)
 ├── backend/            # .NET 10 API + PostgreSQL (EF Core + Npgsql)
 ├── backlog/            # backlog.md project (tasks, decisions, docs)
 ├── docs/               # Narrative docs (requirements, design, architecture)

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [frontend, admin, backend]
+        service: [frontend, internal, backend]
     steps:
       - uses: actions/checkout@v6
       - uses: azure/login@v2

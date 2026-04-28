@@ -77,8 +77,8 @@ variable "frontend_image" {
   type        = string
 }
 
-variable "admin_image" {
-  description = "Fully-qualified admin image (repo:tag)."
+variable "internal_image" {
+  description = "Fully-qualified internal image (repo:tag)."
   type        = string
 }
 
@@ -114,9 +114,9 @@ variable "custom_domain" {
   default     = ""
 }
 
-# --- Admin access restrictions -----------------------------------------
-variable "admin_allowed_ips" {
-  description = "IP CIDRs allowed to reach the admin UI via Front Door. Empty = open (NOT recommended for prod)."
+# --- Internal UI access restrictions ------------------------------------
+variable "internal_allowed_ips" {
+  description = "IP CIDRs allowed to reach the internal UI via Front Door. Empty = open (NOT recommended for prod)."
   type        = list(string)
   default     = []
 }

@@ -10,7 +10,7 @@ variable "postgres_connection_string" {
 }
 variable "backend_image" { type = string }
 variable "frontend_image" { type = string }
-variable "admin_image" { type = string }
+variable "internal_image" { type = string }
 variable "backend_min_replicas" { type = number }
 variable "backend_max_replicas" { type = number }
 variable "app_insights_connection_string" {
@@ -148,9 +148,9 @@ resource "azurerm_container_app" "frontend" {
   }
 }
 
-# --- admin --------------------------------------------------------------
-resource "azurerm_container_app" "admin" {
-  name                         = "ca-${var.name_prefix}-admin"
+# --- internal -----------------------------------------------------------
+resource "azurerm_container_app" "internal" {
+  name                         = "ca-${var.name_prefix}-internal"
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.resource_group
   revision_mode                = "Single"
@@ -168,7 +168,7 @@ resource "azurerm_container_app" "admin" {
 
   ingress {
     external_enabled = true
-    target_port      = 80
+    target_port      = 3000
     transport        = "auto"
     traffic_weight {
       percentage      = 100
@@ -180,14 +180,19 @@ resource "azurerm_container_app" "admin" {
     min_replicas = 1
     max_replicas = 2
     container {
-      name   = "admin"
-      image  = var.admin_image
+      name   = "internal"
+      image  = var.internal_image
       cpu    = 0.25
       memory = "0.5Gi"
+
+      env {
+        name  = "NODE_ENV"
+        value = "production"
+      }
     }
   }
 }
 
 output "backend_fqdn" { value = azurerm_container_app.backend.latest_revision_fqdn }
 output "frontend_fqdn" { value = azurerm_container_app.frontend.latest_revision_fqdn }
-output "admin_fqdn" { value = azurerm_container_app.admin.latest_revision_fqdn }
+output "internal_fqdn" { value = azurerm_container_app.internal.latest_revision_fqdn }

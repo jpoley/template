@@ -1,0 +1,41 @@
+name: internal
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "internal/**"
+      - ".github/workflows/internal.yml"
+  pull_request:
+    paths:
+      - "internal/**"
+      - ".github/workflows/internal.yml"
+
+defaults:
+  run:
+    working-directory: internal
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # Node 22 matches the runtime stage of internal/Dockerfile and Vercel's
+      # supported `next build` runtime. Bun drives install + scripts; Node is
+      # available so any tool that shells out to `node` finds a recent one.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Lint
+        run: bun run lint
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Unit tests
+        run: bun run test
+      - name: Build (next build)
+        run: bun run build

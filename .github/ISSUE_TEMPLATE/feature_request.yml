@@ -23,7 +23,7 @@ body:
       label: Area
       options:
         - frontend
-        - admin
+        - internal
         - backend
         - infra
         - docs
@@ -36,7 +36,7 @@ body:
       label: Problem
       description: What user problem does this solve? Who is the user? What are they trying to do today and why does it fail?
       placeholder: |
-        As an admin managing 100+ users, I can't bulk-disable accounts when an employee group leaves.
+        As an administrator managing 100+ users, I can't bulk-disable accounts when an employee group leaves.
         Today I have to click each user individually, which takes ~15 minutes per batch.
     validations:
       required: true

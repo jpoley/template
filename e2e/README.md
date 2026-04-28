@@ -2,7 +2,7 @@
 
 Playwright end-to-end browser tests covering the full stack.
 
-Tests boot the backend (`dotnet run`), frontend (`bunx vite`), and admin (`bunx vite`) automatically via Playwright's `webServer` config, then drive real Chromium against them.
+Tests boot the backend (`dotnet run`), frontend (`bunx vite`), and internal (`bun run dev` → `next dev`) automatically via Playwright's `webServer` config, then drive real Chromium against them.
 
 ## Prerequisites
 

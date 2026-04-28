@@ -11,7 +11,7 @@
 #   scripts/test-all.sh --keep-going      # run every component, report at end
 #   scripts/test-all.sh --no-smoke        # skip docker compose loop (fast feedback only)
 #   scripts/test-all.sh --with-ci         # also run GitHub Actions workflows locally via act
-#   scripts/test-all.sh --only backend    # run a single component (backend|frontend|admin|infra|e2e|smoke|ci)
+#   scripts/test-all.sh --only backend    # run a single component (backend|frontend|internal|infra|e2e|smoke|ci)
 #
 # Exits non-zero if any component fails.
 set -uo pipefail
@@ -99,8 +99,12 @@ step_frontend() {
   ( cd frontend && bun run typecheck && bun run lint && bun run test && bun run build )
 }
 
-step_admin() {
-  ( cd admin && bun run typecheck && bun run lint && bun run test && bun run build )
+step_internal() {
+  # Next.js: bun install ensures the local node_modules is hydrated; lint /
+  # typecheck / test / build mirror the same per-component contract the Vite
+  # apps used (next build does the typecheck internally; we still call lint
+  # and the unit suite explicitly).
+  ( cd internal && bun install && bun run lint && bun run typecheck && bun run test && bun run build )
 }
 
 step_infra() {
@@ -131,7 +135,7 @@ step_ci() {
 # ---------- run ----------
 if want backend;  then run_step "backend (dotnet test)"                            step_backend  || true; fi
 if want frontend; then run_step "frontend (typecheck + lint + vitest + build)"     step_frontend || true; fi
-if want admin;    then run_step "admin (typecheck + lint + vitest + build)"        step_admin    || true; fi
+if want internal; then run_step "internal (lint + typecheck + vitest + next build)" step_internal || true; fi
 if want infra;    then run_step "infra (terraform fmt + validate + tflint)"        step_infra    || true; fi
 
 if [ -n "$ONLY" ] && [ "$ONLY" = "e2e" ]; then

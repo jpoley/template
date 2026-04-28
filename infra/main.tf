@@ -77,7 +77,7 @@ module "container_apps" {
 
   backend_image        = var.backend_image
   frontend_image       = var.frontend_image
-  admin_image          = var.admin_image
+  internal_image       = var.internal_image
   backend_min_replicas = var.backend_min_replicas
   backend_max_replicas = var.backend_max_replicas
 
@@ -89,13 +89,13 @@ module "container_apps" {
 module "frontdoor" {
   source = "./modules/frontdoor"
 
-  name_prefix       = local.name_prefix
-  resource_group    = azurerm_resource_group.main.name
-  sku               = var.frontdoor_sku
-  backend_fqdn      = module.container_apps.backend_fqdn
-  frontend_fqdn     = module.container_apps.frontend_fqdn
-  admin_fqdn        = module.container_apps.admin_fqdn
-  custom_domain     = var.custom_domain
-  admin_allowed_ips = var.admin_allowed_ips
-  tags              = local.base_tags
+  name_prefix          = local.name_prefix
+  resource_group       = azurerm_resource_group.main.name
+  sku                  = var.frontdoor_sku
+  backend_fqdn         = module.container_apps.backend_fqdn
+  frontend_fqdn        = module.container_apps.frontend_fqdn
+  internal_fqdn        = module.container_apps.internal_fqdn
+  custom_domain        = var.custom_domain
+  internal_allowed_ips = var.internal_allowed_ips
+  tags                 = local.base_tags
 }
