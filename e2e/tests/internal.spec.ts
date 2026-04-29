@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 
-const INTERNAL = process.env.INTERNAL_URL ?? 'http://127.0.0.1:6174'
+// Next.js mounts the app under /internal via basePath.
+const INTERNAL = process.env.INTERNAL_URL ?? 'http://127.0.0.1:6174/internal'
 
 test.describe('internal', () => {
   test('dashboard reports healthy backend', async ({ page }) => {

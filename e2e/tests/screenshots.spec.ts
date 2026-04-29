@@ -1,7 +1,8 @@
 import { test } from '@playwright/test'
 
 const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:6173'
-const INTERNAL = process.env.INTERNAL_URL ?? 'http://127.0.0.1:6174'
+// Next.js mounts the app under /internal via basePath.
+const INTERNAL = process.env.INTERNAL_URL ?? 'http://127.0.0.1:6174/internal'
 
 test('capture: frontend home', async ({ page }) => {
   await page.goto(FRONTEND)

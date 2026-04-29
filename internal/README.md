@@ -12,8 +12,13 @@ Entra ID auth.
 
 ```bash
 bun install
-bun run dev   # http://localhost:6174
+bun run dev   # http://localhost:6174/internal
 ```
+
+The app is mounted under `/internal` via Next.js `basePath` in `next.config.ts`.
+This mirrors the production topology (Front Door routes `/internal/*` to this
+origin) so dev and prod URLs stay identical — `http://localhost:6174/` is a
+404 by design.
 
 Other commands:
 

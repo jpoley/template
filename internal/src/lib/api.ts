@@ -1,12 +1,18 @@
+// Mirror of next.config.ts `basePath`. Browser fetches must include this
+// prefix so they reach the Next.js rewrite (which lives at `/internal/api/*`)
+// rather than the Front Door / nginx route at root.
+const BASE_PATH = '/internal'
+
 export function apiBase(): string {
   if (typeof window === 'undefined') {
     // RSC / server-side fetches share the rewrite target so there's exactly
     // one env var to configure (also see next.config.ts).
     return process.env.API_PROXY_TARGET || 'http://backend:8080'
   }
-  // Browser stays same-origin so Next.js's /api/:path* rewrite proxies to the
-  // backend. Hitting the backend directly would trip CORS in dev.
-  return ''
+  // Browser stays same-origin under the basePath; Next.js's rewrite proxies
+  // /internal/api/* to the backend. Hitting the backend directly would trip
+  // CORS in dev.
+  return BASE_PATH
 }
 
 function url(path: string): string {

@@ -119,9 +119,10 @@ services:
       - "6174:3000"
     healthcheck:
       # node:22-bookworm-slim has no wget/curl. Use Node's built-in fetch.
+      # Probe /internal because Next.js basePath mounts the app at that prefix.
       test:
         - "CMD-SHELL"
-        - "node -e \"fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
+        - "node -e \"fetch('http://127.0.0.1:3000/internal').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""
       interval: 30s
       timeout: 5s
       retries: 5

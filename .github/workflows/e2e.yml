@@ -30,8 +30,8 @@ jobs:
       - name: Install deps
         run: |
           ( cd backend && dotnet restore Backend.sln )
-          ( cd frontend && bun install )
-          ( cd internal && bun install )
+          ( cd frontend && bun install --frozen-lockfile )
+          ( cd internal && bun install --frozen-lockfile )
           ( cd e2e && npm ci || npm install )
 
       - name: Build backend

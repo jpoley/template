@@ -38,7 +38,9 @@ KEEP_UP=0
 BUILD_ARGS=(--build)
 BACKEND_URL="http://localhost:6180"
 FRONTEND_URL="http://localhost:6173"
-INTERNAL_URL="http://localhost:6174"
+# Internal app is mounted under /internal via Next.js basePath (mirrors the
+# Front Door subpath topology). Probing root would 404.
+INTERNAL_URL="http://localhost:6174/internal"
 READY_TIMEOUT="${SMOKE_READY_TIMEOUT:-120}"   # per service, seconds
 REQUEST_TIMEOUT="${SMOKE_REQUEST_TIMEOUT:-10}"
 

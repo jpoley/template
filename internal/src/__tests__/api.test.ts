@@ -1,21 +1,25 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { del, getJSON, postJSON } from '@/lib/api'
 
-const mockFetch = vi.fn<typeof fetch>()
-vi.stubGlobal('fetch', mockFetch)
+let mockFetch: ReturnType<typeof vi.fn<typeof fetch>>
+
+beforeEach(() => {
+  mockFetch = vi.fn<typeof fetch>()
+  vi.stubGlobal('fetch', mockFetch)
+})
 
 afterEach(() => {
-  mockFetch.mockReset()
+  vi.unstubAllGlobals()
 })
 
 describe('api client (browser)', () => {
-  it('getJSON keeps relative URLs same-origin so Next.js rewrites can proxy', async () => {
+  it('getJSON prefixes the basePath so Next.js rewrites can proxy', async () => {
     mockFetch.mockResolvedValueOnce(
       new Response(JSON.stringify([{ id: '1' }]), { status: 200 }),
     )
     await getJSON('/api/items/default')
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(mockFetch.mock.calls[0]?.[0]).toBe('/api/items/default')
+    expect(mockFetch.mock.calls[0]?.[0]).toBe('/internal/api/items/default')
   })
 
   it('getJSON throws on non-OK with status code', async () => {
@@ -37,14 +41,14 @@ describe('api client (browser)', () => {
     expect(init?.body).toBe(JSON.stringify({ name: 'x' }))
   })
 
-  it('del passes pre-encoded URL segments verbatim', async () => {
+  it('del prefixes basePath and preserves pre-encoded path segments verbatim', async () => {
     mockFetch.mockResolvedValueOnce(new Response(null, { status: 204 }))
     const pk = encodeURIComponent('weird/key?with#chars')
     const id = encodeURIComponent('a b/c')
     await del(`/api/items/${pk}/${id}`)
     const calledUrl = mockFetch.mock.calls[0]?.[0]
     expect(calledUrl).toBe(
-      '/api/items/weird%2Fkey%3Fwith%23chars/a%20b%2Fc',
+      '/internal/api/items/weird%2Fkey%3Fwith%23chars/a%20b%2Fc',
     )
   })
 })

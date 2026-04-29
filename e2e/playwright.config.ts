@@ -46,7 +46,9 @@ export default defineConfig({
         },
         {
           command: `cd ../internal && bun run dev -- --hostname 127.0.0.1 --port ${INTERNAL_PORT}`,
-          url: `http://127.0.0.1:${INTERNAL_PORT}`,
+          // Next.js mounts the app under `/internal` via basePath; probing root
+          // would 404.
+          url: `http://127.0.0.1:${INTERNAL_PORT}/internal`,
           reuseExistingServer: true,
           timeout: 120_000,
           stdout: 'ignore',
