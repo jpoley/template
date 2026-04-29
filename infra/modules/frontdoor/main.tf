@@ -42,7 +42,15 @@ resource "azurerm_cdn_frontdoor_origin_group" "each" {
   }
 
   health_probe {
-    path                = each.key == "backend" ? "/api/health" : "/"
+    # Probe the path each origin actually serves:
+    #  - backend: dedicated health endpoint
+    #  - internal: Next.js basePath = `/internal`, so root 404s
+    #  - frontend: SPA at root
+    path = lookup({
+      backend  = "/api/health"
+      internal = "/internal"
+      frontend = "/"
+    }, each.key, "/")
     protocol            = "Https"
     interval_in_seconds = 100
     request_type        = "HEAD"

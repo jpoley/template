@@ -35,7 +35,7 @@ What it actually does:
 
 1. Generates `.env` with `POSTGRES_PASSWORD` on first run (mirrors `rebuild.sh`).
 2. `docker compose up -d --build` for the selected profile.
-3. Waits for the DB container's healthcheck to report healthy, then polls the backend, frontend, and internal HTTP endpoints until they respond (no healthcheck is defined for those — the script polls `/api/health`, `/`, `/` directly).
+3. Waits for the DB container's healthcheck to report healthy, then polls the backend, frontend, and internal HTTP endpoints until they respond (no healthcheck is defined for those — the script polls `/api/health`, `/`, and `/internal` directly; internal lives under its `basePath` so `/` would 404).
 4. Runs a CRUD round-trip: `GET /api/health` → `POST /api/items/` → `GET /api/items/{pk}` (list) → `GET /api/items/{pk}/{id}` → `PUT` → `DELETE` → `GET` expecting 404.
 5. Verifies `frontend` (port 6173) and `internal` (port 6174) serve valid HTML (matches either `<!doctype html>` or a top-level `<html>` tag — Next.js's SSR output varies).
 6. Scans `docker compose logs` for unhandled exceptions, EF migration failures, panics, `[FATAL]`, etc.

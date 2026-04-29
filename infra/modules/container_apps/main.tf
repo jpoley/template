@@ -189,6 +189,15 @@ resource "azurerm_container_app" "internal" {
         name  = "NODE_ENV"
         value = "production"
       }
+      # Server-side proxy target for the Next.js `/api/:path*` rewrite (which is
+      # auto-prefixed to `/internal/api/:path*` because of basePath). Without
+      # this the runtime falls back to `http://backend:8080`, which only
+      # resolves inside docker-compose. The env's stable default_domain plus
+      # the app name gives a revision-independent URL.
+      env {
+        name  = "API_PROXY_TARGET"
+        value = "https://${azurerm_container_app.backend.name}.${azurerm_container_app_environment.main.default_domain}"
+      }
     }
   }
 }

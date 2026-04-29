@@ -93,11 +93,11 @@ On first run, `./rebuild.sh` auto-generates a `POSTGRES_PASSWORD` and writes it 
 
 Both provider implementations are built and ready; only the chosen DB container starts (via compose profiles). The backend reads `Database:Provider` from config and wires up the matching repository. Switching providers wipes the previous DB container — data does not migrate between backends.
 
-| Service    | URL                         |
-| ---------- | --------------------------- |
-| Frontend   | http://localhost:6173       |
-| Internal   | http://localhost:6174       |
-| Backend    | http://localhost:6180       |
+| Service    | URL                                 |
+| ---------- | ----------------------------------- |
+| Frontend   | http://localhost:6173               |
+| Internal   | http://localhost:6174/internal      |
+| Backend    | http://localhost:6180               |
 | Postgres   | `psql -h localhost -p 6432 -U postgres` (password from `.env` → `$POSTGRES_PASSWORD`) |
 | SQL Server | `sqlcmd -S localhost,6433 -U sa -P 'LocalDev!1234'` (optional) |
 
