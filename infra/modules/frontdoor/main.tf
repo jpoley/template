@@ -3,10 +3,27 @@ variable "resource_group" { type = string }
 variable "sku" { type = string }
 variable "backend_fqdn" { type = string }
 variable "frontend_fqdn" { type = string }
-variable "internal_fqdn" { type = string }
-variable "custom_domain" { type = string }
+variable "deploy_internal" { type = bool }
+variable "internal_fqdn" {
+  type    = string
+  default = ""
+}
+variable "custom_domain" {
+  type    = string
+  default = ""
+}
 variable "internal_allowed_ips" { type = list(string) }
 variable "tags" { type = map(string) }
+
+locals {
+  base_origins = {
+    frontend = var.frontend_fqdn
+    backend  = var.backend_fqdn
+  }
+  origins = var.deploy_internal ? merge(local.base_origins, { internal = var.internal_fqdn }) : local.base_origins
+
+  internal_waf_enabled = var.deploy_internal && length(var.internal_allowed_ips) > 0
+}
 
 resource "azurerm_cdn_frontdoor_profile" "main" {
   name                = "afd-${var.name_prefix}"
@@ -19,15 +36,6 @@ resource "azurerm_cdn_frontdoor_endpoint" "main" {
   name                     = "ep-${var.name_prefix}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
   tags                     = var.tags
-}
-
-# --- origin groups ------------------------------------------------------
-locals {
-  origins = {
-    frontend = var.frontend_fqdn
-    internal = var.internal_fqdn
-    backend  = var.backend_fqdn
-  }
 }
 
 resource "azurerm_cdn_frontdoor_origin_group" "each" {
@@ -73,7 +81,7 @@ resource "azurerm_cdn_frontdoor_origin" "each" {
 
 # --- WAF (optional internal IP allowlist) -------------------------------
 resource "azurerm_cdn_frontdoor_firewall_policy" "internal" {
-  count               = length(var.internal_allowed_ips) > 0 ? 1 : 0
+  count               = local.internal_waf_enabled ? 1 : 0
   name                = replace("waf${var.name_prefix}internal", "-", "")
   resource_group_name = var.resource_group
   sku_name            = var.sku
@@ -112,7 +120,7 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "internal" {
 }
 
 resource "azurerm_cdn_frontdoor_security_policy" "internal" {
-  count                    = length(var.internal_allowed_ips) > 0 ? 1 : 0
+  count                    = local.internal_waf_enabled ? 1 : 0
   name                     = "secp-${var.name_prefix}-internal"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
 
@@ -149,17 +157,16 @@ resource "azurerm_cdn_frontdoor_route" "backend" {
 # Front Door forwards the path as-is — no URL rewrite needed. The route
 # patterns just have to cover the bare landing path AND the asset subtree.
 resource "azurerm_cdn_frontdoor_route" "internal" {
+  count                         = var.deploy_internal ? 1 : 0
   name                          = "r-internal"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.main.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.each["internal"].id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.each["internal"].id]
   supported_protocols           = ["Http", "Https"]
-  # Match both the bare landing path (`/internal`) and any subpath
-  # (`/internal/items`, `/internal/_next/static/...`).
-  patterns_to_match      = ["/internal", "/internal/*"]
-  forwarding_protocol    = "HttpsOnly"
-  https_redirect_enabled = true
-  link_to_default_domain = true
+  patterns_to_match             = ["/internal", "/internal/*"]
+  forwarding_protocol           = "HttpsOnly"
+  https_redirect_enabled        = true
+  link_to_default_domain        = true
 }
 
 resource "azurerm_cdn_frontdoor_route" "frontend" {
@@ -178,7 +185,7 @@ output "frontend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}"
 }
 output "internal_url" {
-  value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/internal"
+  value = var.deploy_internal ? "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/internal" : ""
 }
 output "backend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/api"

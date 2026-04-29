@@ -26,7 +26,10 @@ RUN mkdir -p public
 RUN bun run build
 
 
-FROM node:22-bookworm-slim AS runner
+# Runtime stage on Bun: Next.js' standalone output is a regular Node-style
+# `server.js`, but Bun's Node compatibility runs it directly. This avoids a
+# second toolchain (Node) in the runtime image and keeps cold start fast.
+FROM oven/bun:1-slim AS runner
 WORKDIR /app
 
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
@@ -38,15 +41,16 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Next.js standalone output bundles a minimal server + node_modules subset.
-# --chown=node:node lets the runtime user own the files (e.g. for .next/cache).
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
-COPY --from=builder --chown=node:node /app/public ./public
+# `bun` user (uid/gid 1000) ships in the oven/bun image — chown so the runtime
+# user owns the files (Next writes to .next/cache at runtime).
+COPY --from=builder --chown=bun:bun /app/.next/standalone ./
+COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
+COPY --from=builder --chown=bun:bun /app/public ./public
 
-USER node
+USER bun
 EXPOSE 3000
-# node:22 ships fetch built-in; node:22-bookworm-slim has no wget/curl. Use a
-# Node-based HTTP probe so the healthcheck doesn't depend on extra packages.
+# bun ships fetch built-in (and supports node-style `process.exit`), so we can
+# probe ourselves without curl/wget.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
-  CMD node -e "fetch('http://127.0.0.1:3000/internal').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node", "server.js"]
+  CMD bun -e "fetch('http://127.0.0.1:3000/internal').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+CMD ["bun", "server.js"]

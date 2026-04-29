@@ -29,7 +29,30 @@ variable "tags" {
   default     = {}
 }
 
-# --- PostgreSQL ---------------------------------------------------------
+# --- Deployment toggles -------------------------------------------------
+variable "db_provider" {
+  description = "Database provider: postgres (Azure Database for PostgreSQL Flexible Server), sqlserver (Azure SQL Database), or none (in-memory; dev/demo only)."
+  type        = string
+  default     = "postgres"
+  validation {
+    condition     = contains(["postgres", "sqlserver", "none"], var.db_provider)
+    error_message = "db_provider must be one of: postgres, sqlserver, none."
+  }
+}
+
+variable "deploy_internal" {
+  description = "Deploy the internal (Next.js) Container App."
+  type        = bool
+  default     = true
+}
+
+variable "deploy_frontdoor" {
+  description = "Front Door + WAF in front of the Container Apps. When false, Container App ingress is hit directly."
+  type        = bool
+  default     = true
+}
+
+# --- Database (postgres) ------------------------------------------------
 variable "postgres_sku_name" {
   description = "Azure Database for PostgreSQL Flexible Server SKU (e.g. B_Standard_B1ms, GP_Standard_D2s_v3)."
   type        = string
@@ -48,16 +71,31 @@ variable "postgres_version" {
   default     = "16"
 }
 
-variable "postgres_administrator_login" {
-  description = "Administrator login for the Flexible Server."
+# --- Database (sqlserver) -----------------------------------------------
+variable "sqlserver_database_sku" {
+  description = "Azure SQL Database SKU (e.g. Basic, S0, GP_S_Gen5_2)."
   type        = string
-  default     = "pgadmin"
+  default     = "S0"
 }
 
-variable "postgres_administrator_password" {
-  description = "Administrator password for the Flexible Server. Supply via TF_VAR_postgres_administrator_password or a sensitive tfvars file; never commit."
+variable "sqlserver_max_size_gb" {
+  description = "Max storage for the SQL database in GB."
+  type        = number
+  default     = 2
+}
+
+# --- Database (shared) --------------------------------------------------
+variable "db_administrator_login" {
+  description = "Administrator login for the managed database. Ignored when db_provider = none."
+  type        = string
+  default     = "dbadmin"
+}
+
+variable "db_administrator_password" {
+  description = "Administrator password for the managed database. Required when db_provider != none. Supply via TF_VAR_db_administrator_password or a sensitive *.auto.tfvars file; never commit."
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 # --- Container Apps -----------------------------------------------------
@@ -78,8 +116,9 @@ variable "frontend_image" {
 }
 
 variable "internal_image" {
-  description = "Fully-qualified internal image (repo:tag)."
+  description = "Fully-qualified internal image (repo:tag). Ignored when deploy_internal = false."
   type        = string
+  default     = ""
 }
 
 variable "backend_min_replicas" {
@@ -103,7 +142,7 @@ variable "log_analytics_retention_days" {
 
 # --- Front Door ---------------------------------------------------------
 variable "frontdoor_sku" {
-  description = "Front Door SKU (Standard_AzureFrontDoor or Premium_AzureFrontDoor)."
+  description = "Front Door SKU (Standard_AzureFrontDoor or Premium_AzureFrontDoor). Ignored when deploy_frontdoor = false."
   type        = string
   default     = "Standard_AzureFrontDoor"
 }
@@ -116,7 +155,7 @@ variable "custom_domain" {
 
 # --- Internal UI access restrictions ------------------------------------
 variable "internal_allowed_ips" {
-  description = "IP CIDRs allowed to reach the internal UI via Front Door. Empty = open (NOT recommended for prod)."
+  description = "IP CIDRs allowed to reach the internal UI via Front Door. Empty = open (NOT recommended for prod). Ignored when deploy_internal = false or deploy_frontdoor = false."
   type        = list(string)
   default     = []
 }

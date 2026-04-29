@@ -1,35 +1,47 @@
 # Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+# Or run ./deploy.sh to generate this interactively.
 
 project_name = "projecttemplate"
 environment  = "dev"
 location     = "eastus2"
+
+# Deployment toggles --------------------------------------------------------
+db_provider      = "postgres" # postgres | sqlserver | none
+deploy_internal  = true
+deploy_frontdoor = true
 
 # Container images. CI pushes these before `terraform apply`.
 backend_image  = "<acr-name>.azurecr.io/projecttemplate/backend:latest"
 frontend_image = "<acr-name>.azurecr.io/projecttemplate/frontend:latest"
 internal_image = "<acr-name>.azurecr.io/projecttemplate/internal:latest"
 
-# PostgreSQL (Azure Database for PostgreSQL Flexible Server)
-postgres_sku_name            = "B_Standard_B1ms"
-postgres_storage_mb          = 32768
-postgres_version             = "16"
-postgres_administrator_login = "pgadmin"
-# Do NOT commit the password. Supply via TF_VAR_postgres_administrator_password
-# or a gitignored *.auto.tfvars file.
-# postgres_administrator_password = "set-via-env-or-secret-tfvars"
+# Database (postgres branch) ------------------------------------------------
+postgres_sku_name   = "B_Standard_B1ms"
+postgres_storage_mb = 32768
+postgres_version    = "16"
 
-# Backend scale
+# Database (sqlserver branch) ----------------------------------------------
+sqlserver_database_sku = "S0"
+sqlserver_max_size_gb  = 2
+
+# Shared DB credentials ----------------------------------------------------
+db_administrator_login = "dbadmin"
+# Do NOT commit the password. Supply via TF_VAR_db_administrator_password
+# or a gitignored *.auto.tfvars file.
+# db_administrator_password = "set-via-env-or-secret-tfvars"
+
+# Backend scale ------------------------------------------------------------
 backend_min_replicas = 1
 backend_max_replicas = 5
 
-# Log retention (days)
+# Log retention (days) -----------------------------------------------------
 log_analytics_retention_days = 30
 
-# Front Door
+# Front Door ---------------------------------------------------------------
 frontdoor_sku = "Standard_AzureFrontDoor"
 custom_domain = ""
 
-# Lock down internal UI to your office IPs
+# Lock down internal UI to your office IPs (CIDR notation)
 internal_allowed_ips = []
 
 tags = {
