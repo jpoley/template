@@ -1,6 +1,8 @@
 export function apiBase(): string {
   if (typeof window === 'undefined') {
-    return process.env.API_BASE_INTERNAL || 'http://backend:8080'
+    // RSC / server-side fetches share the rewrite target so there's exactly
+    // one env var to configure (also see next.config.ts).
+    return process.env.API_PROXY_TARGET || 'http://backend:8080'
   }
   // Browser stays same-origin so Next.js's /api/:path* rewrite proxies to the
   // backend. Hitting the backend directly would trip CORS in dev.

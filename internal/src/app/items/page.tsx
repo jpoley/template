@@ -13,7 +13,8 @@ export default function ItemsPage() {
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['items', partitionKey] as const,
-    queryFn: () => getJSON<Item[]>(`/api/items/${partitionKey}`),
+    queryFn: () =>
+      getJSON<Item[]>(`/api/items/${encodeURIComponent(partitionKey)}`),
   })
 
   const create = useMutation({
@@ -27,7 +28,9 @@ export default function ItemsPage() {
 
   const remove = useMutation({
     mutationFn: (item: Item) =>
-      del(`/api/items/${item.partitionKey}/${item.id}`),
+      del(
+        `/api/items/${encodeURIComponent(item.partitionKey)}/${encodeURIComponent(item.id)}`,
+      ),
     onSuccess: () => client.invalidateQueries({ queryKey: ['items'] }),
   })
 

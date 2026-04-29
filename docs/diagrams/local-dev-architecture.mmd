@@ -25,7 +25,7 @@ flowchart TB
     browser -->|":6173"| frontend
     browser -->|":6174"| internal
     frontend -->|"/api/*<br/>nginx proxy_pass"| backend
-    internal -->|"/api/* (NEXT_PUBLIC_API_BASE)"| backend
+    internal -->|"/api/*<br/>Next.js rewrite (API_PROXY_TARGET)"| backend
 
     backend -.->|"selected by<br/>Database:Provider<br/>(default)"| postgres
     backend -.->|"selected by<br/>Database:Provider"| sqlserver

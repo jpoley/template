@@ -51,7 +51,7 @@ export default defineConfig({
           timeout: 120_000,
           stdout: 'ignore',
           stderr: 'pipe',
-          env: { NEXT_PUBLIC_API_BASE: `http://127.0.0.1:${BACKEND_PORT}` },
+          env: { API_PROXY_TARGET: `http://127.0.0.1:${BACKEND_PORT}` },
         },
       ],
 })

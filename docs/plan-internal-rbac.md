@@ -211,7 +211,7 @@ Branch: `refactor/internal-nextjs-port`
 - `internal/eslint.config.js` — `eslint-config-next` flat config
 - `internal/components.json` — fresh shadcn (React, Next.js install path)
 - `internal/Dockerfile` — multi-stage: builder runs `bun install` + `bun run build`; runner is `node:22-bookworm-slim`, copies `.next/standalone/`, `.next/static/`, and `public/`; `CMD ["node", "server.js"]`
-- `internal/src/lib/api.ts` — fetch wrappers; client paths read `NEXT_PUBLIC_API_BASE`; RSC paths forward the request cookie via `next/headers`
+- `internal/src/lib/api.ts` — fetch wrappers; client paths stay same-origin (Next.js `/api/*` rewrite proxies to `API_PROXY_TARGET`); RSC paths forward the request cookie via `next/headers`
 - `internal/src/lib/utils.ts` — `cn()` carried forward
 - `internal/src/lib/types.ts` — DTOs carried forward
 - `internal/src/components/ui/button.tsx` — re-added via `bunx shadcn@latest add button`
