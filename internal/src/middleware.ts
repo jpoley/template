@@ -11,13 +11,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 // The matcher is written WITHOUT the basePath prefix — Next.js prepends it
 // automatically (so `/api/:path*` becomes effectively `/internal/api/:path*`).
 // Including `/internal/` in the matcher would cause it to be doubled.
+// Pure path-rewriting helper, exported for unit tests. Strip just the basePath
+// so trailing-slash and no-trailing-slash variants both forward correctly:
+//   /internal/api          → /api
+//   /internal/api/         → /api/
+//   /internal/api/items/1  → /api/items/1
+export function buildRewriteDest(
+  pathname: string,
+  search: string,
+  target: string,
+): URL {
+  const apiPath = pathname.replace(/^\/internal/, '')
+  return new URL(apiPath + search, target)
+}
+
 export function middleware(request: NextRequest) {
   const target = process.env.API_PROXY_TARGET || 'http://backend:8080'
   const url = request.nextUrl.clone()
-  // request.nextUrl.pathname includes the basePath; strip it so we forward
-  // `/api/items/...` (not `/internal/api/items/...`) to the backend.
-  const apiPath = url.pathname.replace(/^\/internal\/api\//, '/api/')
-  const dest = new URL(apiPath + url.search, target)
+  const dest = buildRewriteDest(url.pathname, url.search, target)
   return NextResponse.rewrite(dest)
 }
 
