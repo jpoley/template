@@ -60,4 +60,13 @@ describe('middleware buildRewriteDest', () => {
     const dest = buildRewriteDest('/internalx/api', '', TARGET)
     expect(dest.toString()).toBe(`${TARGET}/internalx/api`)
   })
+
+  it('treats BASE_PATH as a literal string (regex metacharacters in path)', () => {
+    // The strip regex escapes metacharacters in BASE_PATH. A request whose
+    // path happens to fit a wildcard interpretation of /internal (e.g.
+    // /internAl, where the lowercase "i" is replaced) must NOT match — the
+    // strip is literal, not a pattern.
+    const dest = buildRewriteDest('/internAl/api', '', TARGET)
+    expect(dest.toString()).toBe(`${TARGET}/internAl/api`)
+  })
 })

@@ -13,10 +13,16 @@ import { BASE_PATH } from '@/lib/constants'
 // automatically (so `/api/:path*` becomes effectively `/internal/api/:path*`).
 // Including `/internal/` in the matcher would cause it to be doubled.
 
+// Escape regex metacharacters so a basePath like `/api.v1` (or anything else
+// the centralized constant might become) doesn't change the regex's meaning.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 // Boundary-aware: only strip BASE_PATH when it's a full path segment.
 // `/internalx/api` would otherwise be rewritten to `x/api` if the helper
 // were ever called outside the matcher's scope.
-const STRIP_BASE_PATH = new RegExp(`^${BASE_PATH}(?=/|$)`)
+const STRIP_BASE_PATH = new RegExp(`^${escapeRegExp(BASE_PATH)}(?=/|$)`)
 
 // Pure path-rewriting helper, exported for unit tests. Strip just the basePath
 // so trailing-slash and no-trailing-slash variants both forward correctly:
