@@ -116,7 +116,8 @@ resource "azurerm_cdn_frontdoor_security_policy" "internal" {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_endpoint.main.id
         }
-        patterns_to_match = ["/internal/*"]
+        # Cover both the bare landing path and any subpath the SPA routes to.
+        patterns_to_match = ["/internal", "/internal/*"]
       }
     }
   }
@@ -166,10 +167,12 @@ resource "azurerm_cdn_frontdoor_route" "internal" {
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.each["internal"].id]
   cdn_frontdoor_rule_set_ids    = [azurerm_cdn_frontdoor_rule_set.internal.id]
   supported_protocols           = ["Http", "Https"]
-  patterns_to_match             = ["/internal/*"]
-  forwarding_protocol           = "HttpsOnly"
-  https_redirect_enabled        = true
-  link_to_default_domain        = true
+  # Match both the bare landing path (`/internal`) and any subpath
+  # (`/internal/items`, `/internal/admin/...`).
+  patterns_to_match      = ["/internal", "/internal/*"]
+  forwarding_protocol    = "HttpsOnly"
+  https_redirect_enabled = true
+  link_to_default_domain = true
 }
 
 resource "azurerm_cdn_frontdoor_route" "frontend" {

@@ -20,9 +20,9 @@ export default function ItemsPage() {
   const create = useMutation({
     mutationFn: (name: string) =>
       postJSON<Item>('/api/items', { partitionKey, name }),
-    onSuccess: () => {
+    onSuccess: (created) => {
       setNewName('')
-      client.invalidateQueries({ queryKey: ['items'] })
+      client.invalidateQueries({ queryKey: ['items', created.partitionKey] })
     },
   })
 
@@ -31,7 +31,8 @@ export default function ItemsPage() {
       del(
         `/api/items/${encodeURIComponent(item.partitionKey)}/${encodeURIComponent(item.id)}`,
       ),
-    onSuccess: () => client.invalidateQueries({ queryKey: ['items'] }),
+    onSuccess: (_data, item) =>
+      client.invalidateQueries({ queryKey: ['items', item.partitionKey] }),
   })
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {

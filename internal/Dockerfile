@@ -5,8 +5,11 @@ WORKDIR /app
 COPY --from=enterprise-ca . /tmp/enterprise-ca/
 RUN sh /tmp/enterprise-ca/install-ca-in-image.sh && rm -rf /tmp/enterprise-ca
 
-COPY package.json bun.lock* ./
-RUN bun install --frozen-lockfile || bun install
+COPY package.json bun.lock ./
+# Strict — keep image install behavior identical to CI. If the lockfile is
+# stale, fail loudly so the dev updates and commits it instead of letting
+# Docker silently rewrite it.
+RUN bun install --frozen-lockfile
 
 
 FROM oven/bun:1 AS builder
@@ -35,9 +38,10 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
 # Next.js standalone output bundles a minimal server + node_modules subset.
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+# --chown=node:node lets the runtime user own the files (e.g. for .next/cache).
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/public ./public
 
 USER node
 EXPOSE 3000

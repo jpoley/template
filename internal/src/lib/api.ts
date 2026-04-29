@@ -12,7 +12,6 @@ export function apiBase(): string {
 function url(path: string): string {
   const base = apiBase()
   if (!base) return path
-  if (path.startsWith('http')) return path
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`
 }
 
