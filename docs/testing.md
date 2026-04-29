@@ -11,14 +11,14 @@ All scripts live at the repo root under `scripts/`.
 Runs every per-component check, then the closed-loop smoke test. This is the pre-flight gate before claiming a PR is done.
 
 ```bash
-scripts/test-all.sh                 # everything, short-circuit on first failure
-scripts/test-all.sh --no-smoke      # fast feedback: skip the docker compose loop
-scripts/test-all.sh --keep-going    # run every component even if one fails, summary at the end
-scripts/test-all.sh --with-ci       # also run every GitHub Actions workflow locally via act
-scripts/test-all.sh --only backend  # single component: backend|frontend|admin|infra|e2e|smoke|ci
+scripts/test-all.sh                  # everything, short-circuit on first failure
+scripts/test-all.sh --no-smoke       # fast feedback: skip the docker compose loop
+scripts/test-all.sh --keep-going     # run every component even if one fails, summary at the end
+scripts/test-all.sh --with-ci        # also run every GitHub Actions workflow locally via act
+scripts/test-all.sh --only backend   # single component: backend|frontend|internal|infra|e2e|smoke|ci
 ```
 
-Order: `backend` → `frontend` → `admin` → `infra` → (`e2e` if requested) → `smoke` (unless `--no-smoke`) → (`ci` if `--with-ci` or `--only ci`).
+Order: `backend` → `frontend` → `internal` → `infra` → (`e2e` if requested) → `smoke` (unless `--no-smoke`) → (`ci` if `--with-ci` or `--only ci`).
 
 ### `scripts/smoke.sh` — closed-loop runtime test
 
@@ -35,9 +35,9 @@ What it actually does:
 
 1. Generates `.env` with `POSTGRES_PASSWORD` on first run (mirrors `rebuild.sh`).
 2. `docker compose up -d --build` for the selected profile.
-3. Waits for the DB container's healthcheck to report healthy, then polls the backend, frontend, and admin HTTP endpoints until they respond (no healthcheck is defined for those — the script polls `/api/health`, `/`, `/` directly).
+3. Waits for the DB container's healthcheck to report healthy, then polls the backend, frontend, and internal HTTP endpoints until they respond (no healthcheck is defined for those — the script polls `/api/health`, `/`, and `/internal` directly; internal lives under its `basePath` so `/` would 404).
 4. Runs a CRUD round-trip: `GET /api/health` → `POST /api/items/` → `GET /api/items/{pk}` (list) → `GET /api/items/{pk}/{id}` → `PUT` → `DELETE` → `GET` expecting 404.
-5. Verifies `frontend` (port 6173) and `admin` (port 6174) serve valid HTML.
+5. Verifies `frontend` (port 6173) and `internal` (port 6174) serve valid HTML (matches either `<!doctype html>` or a top-level `<html>` tag — Next.js's SSR output varies).
 6. Scans `docker compose logs` for unhandled exceptions, EF migration failures, panics, `[FATAL]`, etc.
 7. Tears down with `docker compose down -v` in a trap (runs even on Ctrl-C).
 
@@ -53,7 +53,7 @@ scripts/ci.sh --event pull_request     # simulate a PR event (default: push)
 scripts/ci.sh --list                   # list jobs; don't execute (fast sanity check)
 scripts/ci.sh --all                    # include build-images.yml (needs .secrets file)
 scripts/ci.sh -- -j <job-name>         # pass args after -- straight through to act
-ACT_WORKFLOWS=frontend.yml,admin.yml scripts/ci.sh
+ACT_WORKFLOWS=frontend.yml,internal.yml scripts/ci.sh
 ```
 
 Requires `act >= 0.2.87` (older versions reject `actions/*` v5+/v6+ which use the node24 runtime). On Apple Silicon, the script auto-appends `--container-architecture linux/amd64` so x86-only action payloads still run.
@@ -68,7 +68,7 @@ The default subset **excludes `build-images.yml`** because it pushes to an Azure
 | ------------ | ---------------------- | ------------------------------------------ | --------------------------- | ---------------------------------- | -------------------- | ---------------------------------- |
 | **backend**  | compiler (C# 13)       | analyzers + `TreatWarningsAsErrors` (enforced during build) | xUnit                       | `WebApplicationFactory<Program>` (`ItemEndpointsTests`, `HealthEndpointTests`) | `dotnet build -c Release`                | via `e2e` + `smoke`                |
 | **frontend** | `vue-tsc --noEmit`     | `eslint` (flat config)                     | `vitest` (jsdom)            | —                                  | `vite build`         | via `e2e` + `smoke`                |
-| **admin**    | `vue-tsc --noEmit`     | `eslint` (flat config)                     | `vitest` (jsdom)            | —                                  | `vite build`         | via `e2e` + `smoke`                |
+| **internal** | `tsc --noEmit` (built into `next build`) | `next lint` (flat config; `eslint-config-next`) | `vitest` (jsdom + RTL) | —                                  | `next build` (standalone Node bundle) | via `e2e` + `smoke`                |
 | **infra**    | N/A                    | `terraform fmt -check -recursive` + `tflint` | —                           | `terraform init -backend=false && terraform validate` | N/A                  | —                                  |
 | **e2e**      | N/A                    | —                                          | —                           | N/A                                | —                    | Playwright (chromium)              |
 | **smoke**    | N/A                    | —                                          | —                           | HTTP CRUD against live compose stack | —                    | docker compose full stack          |
@@ -84,10 +84,10 @@ The default subset **excludes `build-images.yml`** because it pushes to an Azure
 | frontend lint                              |               ✓               |              ✓              |         ✓         |
 | frontend vitest                            |               ✓               |              ✓              |         ✓         |
 | frontend build                             |               ✓               |              ✓              |         ✓         |
-| admin typecheck                            |               ✓               |              ✓              |         ✓         |
-| admin lint                                 |               ✓               |              ✓              |         ✓         |
-| admin vitest                               |               ✓               |              ✓              |         ✓         |
-| admin build                                |               ✓               |              ✓              |         ✓         |
+| internal typecheck                         |               ✓               |              ✓              |         ✓         |
+| internal lint                              |               ✓               |              ✓              |         ✓         |
+| internal vitest                            |               ✓               |              ✓              |         ✓         |
+| internal build (`next build`)              |               ✓               |              ✓              |         ✓         |
 | infra `terraform fmt`                      |               ✓               |              ✓              |         ✓         |
 | infra `terraform validate`                 |               ✓               |              ✓              |         ✓         |
 | infra `tflint`                             |     ✓ (if installed)          |              ✓              |         ✓         |
@@ -127,7 +127,7 @@ Add tests where they go, not where it's convenient:
 | A new backend endpoint                              | `backend/tests/ProjectTemplate.Api.Tests/` (xUnit + `WebApplicationFactory<Program>` + `InMemoryWebApplicationFactory` fixture for DB-free runs) |
 | A new repository / domain service                   | Same project — direct unit tests on the implementation    |
 | A new frontend component                            | `frontend/src/__tests__/` (vitest + `@vue/test-utils`, jsdom environment — use `// @vitest-environment jsdom` directive) |
-| A new admin view                                    | `admin/src/__tests__/` (vitest, jsdom; admin doesn't ship `@vue/test-utils` — stick to module-graph / import smoke unless you add the dep) |
+| A new internal page or component                    | `internal/src/__tests__/` (vitest + `@testing-library/react`, jsdom; client components only — RSC-only paths are exercised through `e2e/` and `smoke`) |
 | A user-visible flow spanning frontend ↔ backend     | `e2e/tests/*.spec.ts` (Playwright; reads `FRONTEND_URL`, default `http://127.0.0.1:6173`) |
 | A new Terraform module                              | `infra/modules/<name>/` with `terraform fmt`-clean code; `tflint` catches most issues |
 | A new API route to guarantee at runtime             | Extend `scripts/smoke.sh` CRUD section — the live-stack contract |
@@ -148,7 +148,7 @@ See `docs/troubleshooting/port-conflicts.md`. Quick fix: `docker compose down -v
 
 Upgrade: `brew upgrade act` (need ≥ 0.2.87). `scripts/ci.sh` now fails fast with this message if the installed version is too old. Pinned actions (`actions/checkout@v6`, `actions/setup-dotnet@v5`, `actions/upload-artifact@v7`, `oven-sh/setup-bun@v2`) all use node24.
 
-### `act` says `backend.yml` or `e2e.yml` failed but the tests passed
+### `act` says `backend.yml`, `internal.yml`, or `e2e.yml` failed but the tests passed
 
 Known act limitation: `actions/upload-artifact@v7` sends a protobuf field (`mime_type`) that act's internal artifact server doesn't understand, so the upload step fails after 5 retries. The real work (build, test) runs successfully — look for `Passed!` lines in the output. Real GitHub Actions accepts the field without issue; only act is affected.
 

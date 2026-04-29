@@ -16,7 +16,7 @@ Schema is in `.logs/README.md`. Log decisions (why, not what) and references (UR
 | Path | What | Stack |
 | --- | --- | --- |
 | `frontend/` | Public UI | Vue 3 + TS + Bun + Tailwind 4 + shadcn-vue, PWA/service worker |
-| `admin/` | Admin UI (internal) | Same stack, no service worker, `@tanstack/vue-query` |
+| `internal/` | Internal staff UI | Next.js 15 + React 19 + TS + Bun (install) / Node 22 (runtime) + Tailwind 4 + shadcn (React), `@tanstack/react-query`, no service worker |
 | `backend/` | API | C# .NET 10, Minimal API, PostgreSQL (EF Core + Npgsql) |
 | `infra/` | Terraform | Azure Container Apps + Azure Database for PostgreSQL + Front Door |
 | `docs/` | Narrative docs (requirements, design, architecture) | Markdown |
@@ -65,13 +65,23 @@ Architecture decisions go in `backlog/decisions/` (via `backlog decision create`
 - Tests use `WebApplicationFactory<Program>` + xUnit + Shouldly (FluentAssertions 8+ switched to commercial — do not upgrade).
 - Postgres is the standard database. Keep repository code behind the `IItemRepository` interface — SqlServer and InMemory implementations coexist, but new features should not branch on provider.
 
-### Frontend / admin
+### Frontend (Vue)
 
 - Tailwind 4 + shadcn-vue. Add shadcn components with `bunx shadcn-vue@latest add <name>`.
-- Server state via `@tanstack/vue-query` (admin) or `fetch` + Pinia (frontend).
+- Server state via `fetch` + Pinia.
 - Path alias `@/` → `src/`.
-- Keep the service worker in `frontend/` only — the admin UI must always be fresh.
+- Service worker / PWA lives only here — the internal UI must always be fresh.
 - ESLint flat config in `eslint.config.js`. Don't revert to `.eslintrc.cjs` — eslint 9+ defaults to flat.
+
+### Internal (Next.js)
+
+- Next.js 15 App Router. Pages (`page.tsx`) are React Server Components by default; mark interactive components with `'use client'`.
+- Tailwind 4 + shadcn (React). Add shadcn components with `bunx shadcn@latest add <name>` (Next.js install path).
+- Server state via `@tanstack/react-query` inside an `AuthProvider`-style `'use client'` wrapper exposed from `app/providers.tsx`.
+- Path alias `@/` → `src/`.
+- No service worker — that's strictly a `frontend/` concern.
+- Output mode `standalone`: production runs `node server.js` from `.next/standalone/`. The Dockerfile installs with Bun, builds with Next, runs with Node 22.
+- ESLint flat config in `eslint.config.js` (`eslint-config-next` + `typescript-eslint`).
 
 ### Terraform
 
@@ -92,7 +102,7 @@ One command, deterministic, runs the whole suite end-to-end:
 scripts/test-all.sh
 ```
 
-This runs, in order: backend `dotnet test`, frontend + admin `typecheck`/`lint`/`vitest`/`build`, `terraform fmt`/`validate`/`tflint`, then the **closed-loop smoke test** (`scripts/smoke.sh` — `docker compose up --build`, wait for services, CRUD round-trip against `/api/items`, verify frontend + admin serve HTML, scan logs for unhandled errors, `docker compose down -v`). Exits non-zero on any failure.
+This runs, in order: backend `dotnet test`, frontend (Vue) `typecheck`/`lint`/`vitest`/`build`, internal (Next.js) `lint`/`typecheck`/`vitest`/`build`, `terraform fmt`/`validate`/`tflint`, then the **closed-loop smoke test** (`scripts/smoke.sh` — `docker compose up --build`, wait for services, CRUD round-trip against `/api/items`, verify frontend + internal serve HTML, scan logs for unhandled errors, `docker compose down -v`). Exits non-zero on any failure.
 
 Full guide (including the matrix of what runs where locally vs in CI, and how to extend the suite per component) is in [`docs/testing.md`](docs/testing.md).
 
@@ -100,9 +110,9 @@ Rules:
 
 - **Closed-loop smoke is non-negotiable** for feature PRs and every dependency bump (`package.json`, `.csproj`, `Directory.Packages.props`, `docker-compose.yml`). Unit tests + typecheck passed while prior library upgrades broke runtime wiring — the smoke step is the guard.
 - If `scripts/test-all.sh` fails, the PR is not done. Fix the runtime issue — do not weaken the test.
-- Useful flags: `--only backend|frontend|admin|infra|e2e|smoke|ci` for fast feedback, `--no-smoke` to skip the compose loop during iteration, `--with-ci` to also run every GitHub Actions workflow locally via [`act`](https://github.com/nektos/act) (opt-in because it pulls multi-GB runner images), `--keep-going` to see every failure at once.
+- Useful flags: `--only backend|frontend|internal|infra|e2e|smoke|ci` for fast feedback, `--no-smoke` to skip the compose loop during iteration, `--with-ci` to also run every GitHub Actions workflow locally via [`act`](https://github.com/nektos/act) (opt-in because it pulls multi-GB runner images), `--keep-going` to see every failure at once.
 - `scripts/ci.sh` runs `act` directly if you want to iterate on workflows without the rest of the suite. Defaults to the safe subset (excludes `build-images.yml`, which needs registry secrets); pass `--all` with a `.secrets` file to include it.
-- Per-component suites live next to the code: `backend/tests/`, `frontend/src/__tests__/`, `admin/src/__tests__/`, `e2e/tests/`. Extend them when you add features — the template's contract is that every component has a test surface, not just the API.
+- Per-component suites live next to the code: `backend/tests/`, `frontend/src/__tests__/`, `internal/src/__tests__/`, `e2e/tests/`. Extend them when you add features — the template's contract is that every component has a test surface, not just the API.
 
 ## Don'ts
 

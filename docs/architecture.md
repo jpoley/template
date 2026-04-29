@@ -9,11 +9,11 @@ flowchart TB
   end
   subgraph ACA[Container Apps Environment]
     FE[frontend]
-    Admin[admin]
+    Internal[internal]
     API[backend]
   end
   AFD -->|/| FE
-  AFD -->|/admin| Admin
+  AFD -->|/internal| Internal
   AFD -->|/api| API
   API --> PG[(Azure Database for PostgreSQL<br/>Flexible Server)]
   API --> KV[Key Vault]
@@ -21,7 +21,8 @@ flowchart TB
 ```
 
 - **Azure Front Door** — global edge, TLS, WAF, path-based routing.
-- **Container Apps** — all three containers (frontend, admin, backend) in the same environment; scale independently.
+- **Container Apps** — all three containers (frontend, internal, backend) in the same environment; scale independently.
+- **Frontends** — `frontend/` is a Vite + Vue 3 SPA with shadcn-vue and a service worker (PWA). `internal/` is a Next.js 15 App Router app with React 19 and shadcn (React) — runs `node server.js` from a `next build --output standalone` bundle, no nginx layer.
 - **Azure Database for PostgreSQL (Flexible Server)** — single server per environment, one database (`projecttemplate`). Connection string injected as a Container App secret. Swap to AAD-token auth via `active_directory_auth_enabled` when ready.
 - **Key Vault** — secrets (connection strings, API keys). Container Apps uses user-assigned managed identity to pull.
 - **Application Insights** — traces/metrics/logs. Backend ships via OpenTelemetry/Serilog.
@@ -40,5 +41,5 @@ GitHub Actions:
 ## Security
 
 - Managed identity over secrets wherever Azure supports it (ACR pull, Key Vault, Storage). Postgres uses password auth by default; flip to AAD auth for production.
-- Admin UI behind Entra ID or IP allowlist at Front Door.
+- Internal UI behind Entra ID or IP allowlist at Front Door.
 - All containers run as non-root.

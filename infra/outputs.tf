@@ -14,8 +14,8 @@ output "frontend_url" {
   value = module.frontdoor.frontend_url
 }
 
-output "admin_url" {
-  value = module.frontdoor.admin_url
+output "internal_url" {
+  value = module.frontdoor.internal_url
 }
 
 output "backend_url" {

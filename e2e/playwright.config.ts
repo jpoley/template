@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const FRONTEND_PORT = 6173
-const ADMIN_PORT = 6174
+const INTERNAL_PORT = 6174
 const BACKEND_PORT = 6180
 
 export default defineConfig({
@@ -45,13 +45,18 @@ export default defineConfig({
           env: { VITE_API_URL: `http://127.0.0.1:${BACKEND_PORT}` },
         },
         {
-          command: `cd ../admin && bunx vite --host 127.0.0.1 --port ${ADMIN_PORT}`,
-          url: `http://127.0.0.1:${ADMIN_PORT}`,
+          // The `dev` script in internal/package.json owns the port (single
+          // source of truth). We only pass --hostname here so playwright can
+          // reach 127.0.0.1 reliably across CI runners.
+          command: `cd ../internal && bun run dev -- --hostname 127.0.0.1`,
+          // Next.js mounts the app under `/internal` via basePath; probing root
+          // would 404.
+          url: `http://127.0.0.1:${INTERNAL_PORT}/internal`,
           reuseExistingServer: true,
-          timeout: 60_000,
+          timeout: 120_000,
           stdout: 'ignore',
           stderr: 'pipe',
-          env: { VITE_API_URL: `http://127.0.0.1:${BACKEND_PORT}` },
+          env: { API_PROXY_TARGET: `http://127.0.0.1:${BACKEND_PORT}` },
         },
       ],
 })

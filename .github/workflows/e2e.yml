@@ -6,7 +6,7 @@ on:
   pull_request:
     paths:
       - "frontend/**"
-      - "admin/**"
+      - "internal/**"
       - "backend/**"
       - "e2e/**"
       - ".github/workflows/e2e.yml"
@@ -30,8 +30,8 @@ jobs:
       - name: Install deps
         run: |
           ( cd backend && dotnet restore Backend.sln )
-          ( cd frontend && bun install )
-          ( cd admin && bun install )
+          ( cd frontend && bun install --frozen-lockfile )
+          ( cd internal && bun install --frozen-lockfile )
           ( cd e2e && npm ci || npm install )
 
       - name: Build backend

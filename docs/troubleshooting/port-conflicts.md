@@ -17,7 +17,7 @@ Every service has **two ports**: one inside its container (fixed, internal) and 
 | Service | Host port | Container port | What it is |
 | --- | --- | --- | --- |
 | Frontend | `6173` | `80` | The public website (nginx) |
-| Admin | `6174` | `80` | The internal admin UI (nginx) |
+| Internal | `6174` | `3000` | The internal Next.js UI (Node) |
 | Backend API | `6180` | `8080` | The .NET API |
 | PostgreSQL | `6432` | `5432` | PostgreSQL 16 (only when `postgres` profile active — default) |
 | SQL Server | `6433` | `1433` | SQL Server 2022 (only when `sqlserver` profile active) |
@@ -103,9 +103,10 @@ If you can't or don't want to stop the other program, we move **our** port inste
 
 You also need to update a few other places so everything agrees on the new port. Use your editor's find-and-replace across these files:
 
-- `docker-compose.yml` — the `ports:` line you just changed, and the `Cors__Origins__*` lines if you changed the frontend/admin ports
-- `frontend/vite.config.ts` and `admin/vite.config.ts` — `port:` and the `proxy` target
-- `frontend/package.json` and `admin/package.json` — the `preview` script
+- `docker-compose.yml` — the `ports:` line you just changed, and the `Cors__Origins__*` lines if you changed the frontend/internal ports
+- `frontend/vite.config.ts` — `port:` and the `proxy` target
+- `frontend/package.json` — the `preview` script
+- `internal/next.config.ts` and `internal/package.json` — Next.js dev/start scripts (Next.js binds to 3000 by default; the host-side port is what matters for compose)
 - `backend/src/ProjectTemplate.Api/appsettings.json` — `Cors.Origins`
 - `backend/src/ProjectTemplate.Api/Properties/launchSettings.json` — `applicationUrl`
 - `rebuild.sh` — the port table at the end

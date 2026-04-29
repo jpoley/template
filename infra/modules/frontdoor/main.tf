@@ -3,9 +3,9 @@ variable "resource_group" { type = string }
 variable "sku" { type = string }
 variable "backend_fqdn" { type = string }
 variable "frontend_fqdn" { type = string }
-variable "admin_fqdn" { type = string }
+variable "internal_fqdn" { type = string }
 variable "custom_domain" { type = string }
-variable "admin_allowed_ips" { type = list(string) }
+variable "internal_allowed_ips" { type = list(string) }
 variable "tags" { type = map(string) }
 
 resource "azurerm_cdn_frontdoor_profile" "main" {
@@ -25,7 +25,7 @@ resource "azurerm_cdn_frontdoor_endpoint" "main" {
 locals {
   origins = {
     frontend = var.frontend_fqdn
-    admin    = var.admin_fqdn
+    internal = var.internal_fqdn
     backend  = var.backend_fqdn
   }
 }
@@ -42,7 +42,15 @@ resource "azurerm_cdn_frontdoor_origin_group" "each" {
   }
 
   health_probe {
-    path                = each.key == "backend" ? "/api/health" : "/"
+    # Probe the path each origin actually serves:
+    #  - backend: dedicated health endpoint
+    #  - internal: Next.js basePath = `/internal`, so root 404s
+    #  - frontend: SPA at root
+    path = lookup({
+      backend  = "/api/health"
+      internal = "/internal"
+      frontend = "/"
+    }, each.key, "/")
     protocol            = "Https"
     interval_in_seconds = 100
     request_type        = "HEAD"
@@ -63,17 +71,17 @@ resource "azurerm_cdn_frontdoor_origin" "each" {
   certificate_name_check_enabled = true
 }
 
-# --- WAF (optional admin IP allowlist) ----------------------------------
-resource "azurerm_cdn_frontdoor_firewall_policy" "admin" {
-  count               = length(var.admin_allowed_ips) > 0 ? 1 : 0
-  name                = replace("waf${var.name_prefix}admin", "-", "")
+# --- WAF (optional internal IP allowlist) -------------------------------
+resource "azurerm_cdn_frontdoor_firewall_policy" "internal" {
+  count               = length(var.internal_allowed_ips) > 0 ? 1 : 0
+  name                = replace("waf${var.name_prefix}internal", "-", "")
   resource_group_name = var.resource_group
   sku_name            = var.sku
   enabled             = true
   mode                = "Prevention"
 
   custom_rule {
-    name     = "AllowAdminIPs"
+    name     = "AllowInternalIPs"
     enabled  = true
     priority = 100
     type     = "MatchRule"
@@ -83,7 +91,7 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "admin" {
       match_variable     = "RemoteAddr"
       operator           = "IPMatch"
       negation_condition = false
-      match_values       = var.admin_allowed_ips
+      match_values       = var.internal_allowed_ips
     }
   }
 
@@ -103,20 +111,21 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "admin" {
   }
 }
 
-resource "azurerm_cdn_frontdoor_security_policy" "admin" {
-  count                    = length(var.admin_allowed_ips) > 0 ? 1 : 0
-  name                     = "secp-${var.name_prefix}-admin"
+resource "azurerm_cdn_frontdoor_security_policy" "internal" {
+  count                    = length(var.internal_allowed_ips) > 0 ? 1 : 0
+  name                     = "secp-${var.name_prefix}-internal"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.main.id
 
   security_policies {
     firewall {
-      cdn_frontdoor_firewall_policy_id = azurerm_cdn_frontdoor_firewall_policy.admin[0].id
+      cdn_frontdoor_firewall_policy_id = azurerm_cdn_frontdoor_firewall_policy.internal[0].id
 
       association {
         domain {
           cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_endpoint.main.id
         }
-        patterns_to_match = ["/admin/*"]
+        # Cover both the bare landing path and any subpath the SPA routes to.
+        patterns_to_match = ["/internal", "/internal/*"]
       }
     }
   }
@@ -135,16 +144,22 @@ resource "azurerm_cdn_frontdoor_route" "backend" {
   link_to_default_domain        = true
 }
 
-resource "azurerm_cdn_frontdoor_route" "admin" {
-  name                          = "r-admin"
+# Next.js is configured with `basePath: '/internal'` so the origin natively
+# serves at `/internal/...` (including `/internal/_next/static/*` assets).
+# Front Door forwards the path as-is — no URL rewrite needed. The route
+# patterns just have to cover the bare landing path AND the asset subtree.
+resource "azurerm_cdn_frontdoor_route" "internal" {
+  name                          = "r-internal"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.main.id
-  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.each["admin"].id
-  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.each["admin"].id]
+  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.each["internal"].id
+  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.each["internal"].id]
   supported_protocols           = ["Http", "Https"]
-  patterns_to_match             = ["/admin/*"]
-  forwarding_protocol           = "HttpsOnly"
-  https_redirect_enabled        = true
-  link_to_default_domain        = true
+  # Match both the bare landing path (`/internal`) and any subpath
+  # (`/internal/items`, `/internal/_next/static/...`).
+  patterns_to_match      = ["/internal", "/internal/*"]
+  forwarding_protocol    = "HttpsOnly"
+  https_redirect_enabled = true
+  link_to_default_domain = true
 }
 
 resource "azurerm_cdn_frontdoor_route" "frontend" {
@@ -162,8 +177,8 @@ resource "azurerm_cdn_frontdoor_route" "frontend" {
 output "frontend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}"
 }
-output "admin_url" {
-  value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/admin"
+output "internal_url" {
+  value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/internal"
 }
 output "backend_url" {
   value = "https://${azurerm_cdn_frontdoor_endpoint.main.host_name}/api"

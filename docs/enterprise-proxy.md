@@ -79,7 +79,7 @@ command.
 | Docker image **build**       | `additional_contexts: enterprise-ca: ./certs` + `update-ca-certificates` |
 | Docker image **runtime**     | the cert is baked into `/etc/ssl/certs/ca-certificates.crt` of every image |
 | Backend `HttpClient`         | system trust inside the runtime image                    |
-| Frontend / admin SSR / build | `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt` |
+| Frontend / internal SSR / build | `NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt` |
 | Playwright browser download  | `NODE_EXTRA_CA_CERTS` (`scripts/enterprise-cert.sh env`) |
 
 The **host system trust store** is also offered as an optional convenience —
@@ -98,7 +98,7 @@ requirement for the template itself.
 | `certs/README.md`                 | Pointer to this doc. Tracked.                                        |
 | `scripts/enterprise-cert.sh`      | Host-side `enable` / `disable` / `status` / `env` / `verify`.        |
 | `install/_common.sh`              | Sources `certs/enterprise-ca.env` if present.                        |
-| `frontend/Dockerfile`, `admin/Dockerfile`, `backend/Dockerfile` | `COPY --from=enterprise-ca ...` + run installer. |
+| `frontend/Dockerfile`, `internal/Dockerfile`, `backend/Dockerfile` | `COPY --from=enterprise-ca ...` + run installer. |
 | `docker-compose.yml`              | `additional_contexts: enterprise-ca: ./certs` per service.           |
 
 ## Verifying it works
@@ -117,10 +117,10 @@ scripts/enterprise-cert.sh enable /tmp/fake.pem
 scripts/enterprise-cert.sh status      # → ENABLED, fingerprint, expiry
 
 # 3. Build with cert baked in
-docker compose build frontend admin backend
+docker compose build frontend internal backend
 
 # 4. Confirm the cert is actually in each runtime image
-for c in frontend admin backend; do
+for c in frontend internal backend; do
   echo "=== $c ==="
   docker compose run --rm --entrypoint sh "$c" -c \
     'awk "/-----BEGIN CERTIFICATE-----/{c++} END{print c\" certs in bundle\"}" /etc/ssl/certs/ca-certificates.crt; \
@@ -129,7 +129,7 @@ done
 
 # 5. Disable + rebuild + confirm absence
 scripts/enterprise-cert.sh disable
-docker compose build frontend admin backend
+docker compose build frontend internal backend
 docker compose run --rm --entrypoint sh frontend -c \
   'test -f /usr/local/share/ca-certificates/enterprise-ca.crt && echo "STILL PRESENT (bug)" || echo "absent ✓"'
 ```

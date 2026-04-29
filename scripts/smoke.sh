@@ -38,7 +38,9 @@ KEEP_UP=0
 BUILD_ARGS=(--build)
 BACKEND_URL="http://localhost:6180"
 FRONTEND_URL="http://localhost:6173"
-ADMIN_URL="http://localhost:6174"
+# Internal app is mounted under /internal via Next.js basePath (mirrors the
+# Front Door subpath topology). Probing root would 404.
+INTERNAL_URL="http://localhost:6174/internal"
 READY_TIMEOUT="${SMOKE_READY_TIMEOUT:-120}"   # per service, seconds
 REQUEST_TIMEOUT="${SMOKE_REQUEST_TIMEOUT:-10}"
 
@@ -142,7 +144,7 @@ step "Waiting for services to become ready"
 wait_db_healthy "$DB_CONTAINER"
 wait_http_ok backend  "$BACKEND_URL/api/health"
 wait_http_ok frontend "$FRONTEND_URL"
-wait_http_ok admin    "$ADMIN_URL"
+wait_http_ok internal "$INTERNAL_URL"
 
 # ---------- backend CRUD round-trip ----------
 step "Backend CRUD round-trip (/api/items)"
@@ -193,18 +195,20 @@ ok "DELETE /api/items/$PK/$ID → 204"
 curl_json GET "/api/items/$PK/$ID" 404
 ok "GET /api/items/$PK/$ID after delete → 404"
 
-# ---------- frontend/admin HTML ----------
-step "Frontend + admin serve HTML"
+# ---------- frontend/internal HTML ----------
+step "Frontend + internal serve HTML"
 
 check_html() {
   local name="$1" url="$2" body
   body="$(curl -fsS --max-time "$REQUEST_TIMEOUT" "$url")" || fail "$name $url unreachable"
   [ -n "$body" ] || fail "$name $url returned empty body"
-  echo "$body" | grep -qi '<!doctype html' || fail "$name $url did not return HTML"
+  # Next.js may emit `<!DOCTYPE html>` or skip the doctype entirely on some
+  # routes; accept either the doctype or a top-level <html ...> tag.
+  echo "$body" | grep -qiE '<!doctype html|<html' || fail "$name $url did not return HTML"
   ok "$name $url → HTML"
 }
 check_html frontend "$FRONTEND_URL"
-check_html admin    "$ADMIN_URL"
+check_html internal "$INTERNAL_URL"
 
 # ---------- log scan ----------
 step "Scanning container logs for runtime errors"

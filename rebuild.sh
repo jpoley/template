@@ -7,7 +7,7 @@
 #   ./rebuild.sh postgres --fresh      # wipe postgres volume, start fresh
 #   ./rebuild.sh --fresh               # wipe current provider's volume
 #   ./rebuild.sh --full                # nuclear: teardown everything across all profiles
-#   ./rebuild.sh --only backend        # only rebuild the backend image (skip frontend/admin)
+#   ./rebuild.sh --only backend        # only rebuild the backend image (skip frontend/internal)
 #
 # The expensive thing (DB container + volume) is left alone unless you ask for
 # --fresh or --full. That makes inner-loop code changes fast: only the app
@@ -97,7 +97,7 @@ case "$PROVIDER" in
 esac
 DB_TIMEOUT="${DB_TIMEOUT:-$DB_TIMEOUT_DEFAULT}"
 
-APP_SERVICES=(backend frontend admin)
+APP_SERVICES=(backend frontend internal)
 if [ -n "$ONLY" ]; then APP_SERVICES=("$ONLY"); fi
 
 # -----------------------------------------------------------------------------
@@ -178,7 +178,7 @@ echo "-----"
 printf '  %-38s  %-10s  %-10s  %s\n' "Host (clickable)" "Container" "Service" "Purpose"
 printf '  %-38s  %-10s  %-10s  %s\n' "--------------------------" "----------" "----------" "--------------------------------------"
 row "http://localhost:6173" "-> :80"   "frontend"  "Public Vue UI (nginx)"
-row "http://localhost:6174" "-> :80"   "admin"     "Admin Vue UI (nginx)"
+row "http://localhost:6174/internal" "-> :3000" "internal"  "Internal Next.js UI (Node, basePath=/internal)"
 row "http://localhost:6180" "-> :8080" "backend"   ".NET API (Kestrel on :8080)"
 case "$PROVIDER" in
   sqlserver)
@@ -192,7 +192,7 @@ esac
 echo
 echo "Open in browser:"
 printf '  %-18s %s\n' "Frontend"         "$(link http://localhost:6173)"
-printf '  %-18s %s\n' "Admin"            "$(link http://localhost:6174)"
+printf '  %-18s %s\n' "Internal"         "$(link http://localhost:6174/internal)"
 printf '  %-18s %s\n' "Backend health"   "$(link http://localhost:6180/api/health)"
 printf '  %-18s %s   (Development only)\n' "Backend API docs" "$(link http://localhost:6180/scalar)"
 
@@ -202,4 +202,4 @@ echo "  ./rebuild.sh                 # keep $DB_PROVIDER DB, rebuild apps only (
 echo "  ./rebuild.sh <provider>      # switch DB (postgres|sqlserver)"
 echo "  ./rebuild.sh --fresh         # wipe current DB volume and restart"
 echo "  ./rebuild.sh --full          # nuke everything and start over"
-echo "  ./rebuild.sh --only backend  # rebuild only backend (skip frontend/admin)"
+echo "  ./rebuild.sh --only backend  # rebuild only backend (skip frontend/internal)"

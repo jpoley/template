@@ -25,7 +25,7 @@ body:
       label: Area
       options:
         - frontend
-        - admin
+        - internal
         - backend
         - infra
         - docs
@@ -54,7 +54,7 @@ body:
     attributes:
       label: Summary
       description: One or two sentences. What is broken?
-      placeholder: "Clicking 'Save' on the admin user form returns 500 instead of persisting the record."
+      placeholder: "Clicking 'Save' on the internal user form returns 500 instead of persisting the record."
     validations:
       required: true
   - type: textarea
@@ -64,7 +64,7 @@ body:
       description: Numbered, deterministic steps. If it isn't reproducible, say so and explain how often it occurs.
       placeholder: |
         1. `docker compose up --build`
-        2. Navigate to http://localhost:5173/admin/users
+        2. Navigate to http://localhost:6174/internal/users
         3. Click "New user", fill form, click Save
         4. Observe 500 response in network tab
     validations:

@@ -10,8 +10,8 @@ One-paragraph summary of what the product does and who it's for.
 
 | Persona | Description | Primary goals |
 | --- | --- | --- |
-| *End user* | ... | ... |
-| *Administrator* | ... | Manage data in admin UI |
+| *End user* | ... | Use the public frontend (Vue) UI |
+| *Internal staff* | ... | Manage data in the internal (Next.js) UI |
 
 ## Functional requirements
 

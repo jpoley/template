@@ -1,7 +1,8 @@
 import { test } from '@playwright/test'
 
 const FRONTEND = process.env.FRONTEND_URL ?? 'http://127.0.0.1:6173'
-const ADMIN = process.env.ADMIN_URL ?? 'http://127.0.0.1:6174'
+// Next.js mounts the app under /internal via basePath.
+const INTERNAL = process.env.INTERNAL_URL ?? 'http://127.0.0.1:6174/internal'
 
 test('capture: frontend home', async ({ page }) => {
   await page.goto(FRONTEND)
@@ -9,18 +10,18 @@ test('capture: frontend home', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/frontend-home.png', fullPage: true })
 })
 
-test('capture: admin dashboard', async ({ page }) => {
-  await page.goto(ADMIN)
+test('capture: internal dashboard', async ({ page }) => {
+  await page.goto(INTERNAL)
   await page.locator('.font-mono', { hasText: 'Healthy' }).waitFor({ timeout: 10_000 })
-  await page.screenshot({ path: 'screenshots/admin-dashboard.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/internal-dashboard.png', fullPage: true })
 })
 
-test('capture: admin items', async ({ page }) => {
-  await page.goto(ADMIN + '/items')
+test('capture: internal items', async ({ page }) => {
+  await page.goto(INTERNAL + '/items')
   await page.getByPlaceholder('new item name').fill('demo-item')
   await page.getByRole('button', { name: 'Add' }).click()
   await page.locator('li', { hasText: 'demo-item' }).waitFor()
-  await page.screenshot({ path: 'screenshots/admin-items.png', fullPage: true })
+  await page.screenshot({ path: 'screenshots/internal-items.png', fullPage: true })
   // cleanup
   await page
     .locator('li', { hasText: 'demo-item' })

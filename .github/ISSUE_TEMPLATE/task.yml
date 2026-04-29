@@ -23,7 +23,7 @@ body:
       label: Area
       options:
         - frontend
-        - admin
+        - internal
         - backend
         - infra
         - docs
