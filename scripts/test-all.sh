@@ -100,12 +100,13 @@ step_frontend() {
 }
 
 step_internal() {
-  # Next.js: lint / typecheck / test / build mirror the same per-component
-  # contract the Vite apps used (next build does the typecheck internally; we
-  # still call lint and the unit suite explicitly). --frozen-lockfile matches
-  # the CI + Dockerfile contract so this script never silently rewrites
-  # bun.lock — if it fails, update the lockfile via `bun install` manually
-  # and commit it.
+  # Next.js per-component contract: install (frozen — matches CI + Dockerfile,
+  # so this script never silently rewrites bun.lock), lint, an explicit
+  # `tsc --noEmit` typecheck (faster than waiting for next build), unit
+  # tests, then the production build. `next build` typechecks too, but
+  # running `typecheck` first surfaces type errors in seconds instead of
+  # after the full optimizing build. If frozen install fails the dev should
+  # update the lockfile via `bun install` manually and commit it.
   ( cd internal && bun install --frozen-lockfile && bun run lint && bun run typecheck && bun run test && bun run build )
 }
 

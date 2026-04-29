@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { BASE_PATH } from '@/lib/constants'
 
 // Runtime-evaluated proxy for `/internal/api/*` → `${API_PROXY_TARGET}/api/*`.
 //
@@ -11,17 +12,24 @@ import { NextResponse, type NextRequest } from 'next/server'
 // The matcher is written WITHOUT the basePath prefix — Next.js prepends it
 // automatically (so `/api/:path*` becomes effectively `/internal/api/:path*`).
 // Including `/internal/` in the matcher would cause it to be doubled.
+
+// Boundary-aware: only strip BASE_PATH when it's a full path segment.
+// `/internalx/api` would otherwise be rewritten to `x/api` if the helper
+// were ever called outside the matcher's scope.
+const STRIP_BASE_PATH = new RegExp(`^${BASE_PATH}(?=/|$)`)
+
 // Pure path-rewriting helper, exported for unit tests. Strip just the basePath
 // so trailing-slash and no-trailing-slash variants both forward correctly:
 //   /internal/api          → /api
 //   /internal/api/         → /api/
 //   /internal/api/items/1  → /api/items/1
+//   /internalx/api         → /internalx/api  (boundary-aware: not stripped)
 export function buildRewriteDest(
   pathname: string,
   search: string,
   target: string,
 ): URL {
-  const apiPath = pathname.replace(/^\/internal/, '')
+  const apiPath = pathname.replace(STRIP_BASE_PATH, '')
   return new URL(apiPath + search, target)
 }
 

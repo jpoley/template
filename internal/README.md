@@ -12,8 +12,21 @@ Entra ID auth.
 
 ```bash
 bun install
-bun run dev   # http://localhost:6174/internal
+# When running natively (not via docker compose), point the proxy at the
+# backend on its host port. The middleware reads this at request time.
+API_PROXY_TARGET=http://localhost:6180 bun run dev   # http://localhost:6174/internal
 ```
+
+For convenience, drop the var into `.env.local` (gitignored) so it's picked up
+automatically:
+
+```bash
+echo 'API_PROXY_TARGET=http://localhost:6180' > .env.local
+bun run dev
+```
+
+Inside `docker compose up` the env defaults to `http://backend:8080` (the
+compose service name) — no override needed there.
 
 The app is mounted under `/internal` via Next.js `basePath` in `next.config.ts`.
 This mirrors the production topology (Front Door routes `/internal/*` to this

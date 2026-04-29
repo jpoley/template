@@ -53,4 +53,11 @@ describe('middleware buildRewriteDest', () => {
       'https://other-backend.example.com/api/health',
     )
   })
+
+  it('boundary-aware: does NOT strip /internalx (no path boundary)', () => {
+    // Defensive: the matcher should never let this reach the helper, but
+    // an exported function should be safe in isolation.
+    const dest = buildRewriteDest('/internalx/api', '', TARGET)
+    expect(dest.toString()).toBe(`${TARGET}/internalx/api`)
+  })
 })
