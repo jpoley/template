@@ -45,7 +45,10 @@ export default defineConfig({
           env: { VITE_API_URL: `http://127.0.0.1:${BACKEND_PORT}` },
         },
         {
-          command: `cd ../internal && bun run dev -- --hostname 127.0.0.1 --port ${INTERNAL_PORT}`,
+          // The `dev` script in internal/package.json owns the port (single
+          // source of truth). We only pass --hostname here so playwright can
+          // reach 127.0.0.1 reliably across CI runners.
+          command: `cd ../internal && bun run dev -- --hostname 127.0.0.1`,
           // Next.js mounts the app under `/internal` via basePath; probing root
           // would 404.
           url: `http://127.0.0.1:${INTERNAL_PORT}/internal`,

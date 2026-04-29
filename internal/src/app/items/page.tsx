@@ -46,7 +46,11 @@ export default function ItemsPage() {
       <h1 className="text-3xl font-bold">Items</h1>
 
       <div className="flex gap-2">
+        <label htmlFor="items-partition-key" className="sr-only">
+          Partition key
+        </label>
         <input
+          id="items-partition-key"
           value={partitionKey}
           onChange={(e) => setPartitionKey(e.target.value)}
           className="border rounded px-2 py-1"
@@ -55,7 +59,11 @@ export default function ItemsPage() {
       </div>
 
       <form className="flex gap-2" onSubmit={onSubmit}>
+        <label htmlFor="items-new-name" className="sr-only">
+          New item name
+        </label>
         <input
+          id="items-new-name"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           required
