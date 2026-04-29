@@ -19,10 +19,15 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-// Boundary-aware: only strip BASE_PATH when it's a full path segment.
-// `/internalx/api` would otherwise be rewritten to `x/api` if the helper
-// were ever called outside the matcher's scope.
-const STRIP_BASE_PATH = new RegExp(`^${escapeRegExp(BASE_PATH)}(?=/|$)`)
+// Exported for tests so the regex behavior can be verified across basePath
+// values without mocking the module-level constant.
+export function makeStripRegex(basePath: string): RegExp {
+  // Boundary-aware: only strip when basePath is a full path segment.
+  // `/internalx/api` would otherwise be rewritten to `x/api`.
+  return new RegExp(`^${escapeRegExp(basePath)}(?=/|$)`)
+}
+
+const STRIP_BASE_PATH = makeStripRegex(BASE_PATH)
 
 // Pure path-rewriting helper, exported for unit tests. Strip just the basePath
 // so trailing-slash and no-trailing-slash variants both forward correctly:

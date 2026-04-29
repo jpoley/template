@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildRewriteDest } from '@/middleware'
+import { buildRewriteDest, makeStripRegex } from '@/middleware'
 
 const TARGET = 'http://backend.example.com:8080'
 
@@ -68,5 +68,35 @@ describe('middleware buildRewriteDest', () => {
     // strip is literal, not a pattern.
     const dest = buildRewriteDest('/internAl/api', '', TARGET)
     expect(dest.toString()).toBe(`${TARGET}/internAl/api`)
+  })
+})
+
+// makeStripRegex is exposed so we can exercise the escape behavior across
+// basePath values that actually contain metacharacters — the
+// /internAl-style test above can't validate escaping because BASE_PATH
+// (`/internal`) has no metacharacters in the first place.
+describe('makeStripRegex', () => {
+  it('strips a literal basePath at a path boundary', () => {
+    const re = makeStripRegex('/internal')
+    expect('/internal/api/foo'.replace(re, '')).toBe('/api/foo')
+    expect('/internalx/api'.replace(re, '')).toBe('/internalx/api')
+  })
+
+  it('treats `.` in basePath literally (regression for unescaped metacharacters)', () => {
+    const re = makeStripRegex('/api.v1')
+    // The literal /api.v1 prefix is stripped:
+    expect('/api.v1/items'.replace(re, '')).toBe('/items')
+    // But /apiXv1 — which would match `.` if `.` were a wildcard — must not
+    // be stripped, since `.` was escaped to a literal dot.
+    expect('/apiXv1/items'.replace(re, '')).toBe('/apiXv1/items')
+  })
+
+  it('treats `+` in basePath literally', () => {
+    const re = makeStripRegex('/internal+x')
+    expect('/internal+x/api'.replace(re, '')).toBe('/api')
+    // `+` as a regex would mean "one or more of /internal" — must not match.
+    expect('/internalinternalx/api'.replace(re, '')).toBe(
+      '/internalinternalx/api',
+    )
   })
 })
